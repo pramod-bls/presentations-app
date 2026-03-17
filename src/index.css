@@ -1,0 +1,139 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif;
+  background: #222;
+  color: #fff;
+  min-height: 100vh;
+  padding: 40px 20px;
+}
+
+h1 {
+  font-weight: 200;
+  font-size: 2.5em;
+  text-align: center;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.folder-bar {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #888;
+  font-size: 0.9em;
+}
+
+.folder-bar .path {
+  color: #42affa;
+  font-family: monospace;
+}
+
+.folder-bar button {
+  background: transparent;
+  border: 1px solid #42affa;
+  color: #42affa;
+  padding: 4px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  margin-left: 10px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.folder-bar button:hover {
+  background: #42affa;
+  color: #222;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.card:hover {
+  border-color: #42affa;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(66,175,250,0.15);
+}
+
+.thumbnail {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%;
+  overflow: hidden;
+  background: #191919;
+}
+
+.thumbnail iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  transform-origin: 0 0;
+  border: none;
+  pointer-events: none;
+}
+
+.card-title {
+  padding: 14px 18px;
+  font-size: 1.1em;
+  font-weight: 400;
+  color: #42affa;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.welcome {
+  text-align: center;
+  padding: 80px 20px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.welcome p {
+  color: #999;
+  margin-bottom: 30px;
+  font-size: 1.1em;
+  line-height: 1.6;
+}
+
+.welcome button {
+  background: #42affa;
+  border: none;
+  color: #222;
+  padding: 12px 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.1em;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.welcome button:hover {
+  background: #8dcffc;
+}
+
+.loading {
+  text-align: center;
+  color: #888;
+  font-size: 1.2em;
+  padding: 60px;
+}
+
+.error { color: #e55; }
