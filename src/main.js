@@ -178,10 +178,10 @@ function registerProtocolHandler() {
     const url = new URL(request.url);
     const filePath = decodeURIComponent(url.pathname);
 
-    // Intercept /dist/ paths → serve from bundled reveal/
-    const distMatch = filePath.match(/\/dist\/(.*)/);
-    if (distMatch) {
-      const revealPath = path.join(revealDir, distMatch[1]);
+    // Intercept /dist/ and /plugin/ paths → serve from bundled reveal/
+    const bundledMatch = filePath.match(/\/(dist|plugin)\/(.*)/);
+    if (bundledMatch) {
+      const revealPath = path.join(revealDir, bundledMatch[1], bundledMatch[2]);
       if (fs.existsSync(revealPath)) {
         const ext = path.extname(revealPath).toLowerCase();
         return new Response(fs.readFileSync(revealPath), {
