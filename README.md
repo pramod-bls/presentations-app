@@ -4,13 +4,15 @@ A universal [Reveal.js](https://revealjs.com/) presentation viewer built with El
 
 ## Architecture
 
-The app provides three shared layers that every presentation builds on:
+The app bundles and serves three shared layers so that presentations don't need to ship their own copies:
 
-| Layer | File | Purpose |
-|-------|------|---------|
-| **Reveal.js** | `dist/` | Core slide engine — rendering, navigation, plugins (Markdown, Highlight, Notes, Zoom, Search) |
-| **DeckInit** | `deck-init.js` | Shared initializer — sets sensible defaults (full-width, convex transition, slide numbers, etc.) and auto-detects loaded plugins |
-| **SlideController** | `plugin/slide-controller/index.js` | D3/SVG animation framework — provides step-based slide animations controlled by Enter (advance) and R (reset) keys |
+| Layer | Bundled in app | Purpose |
+|-------|----------------|---------|
+| **Reveal.js** | `reveal/` (dist files) | Core slide engine — rendering, navigation, plugins (Markdown, Highlight, Notes, Zoom, Search) |
+| **DeckInit** | `reveal/deck-init.js` | Shared initializer — sets sensible defaults (full-width, convex transition, slide numbers, etc.) and auto-detects loaded plugins |
+| **SlideController** | `reveal/plugin/slide-controller/index.js` | D3/SVG animation framework — provides step-based slide animations controlled by Enter (advance) and R (reset) keys |
+
+The app automatically generates an `index.html` for each deck that includes all the necessary script and CSS tags. Presentations only need to provide their own content.
 
 ### SlideController API
 
@@ -42,9 +44,6 @@ Each presentation lives in its own subfolder inside your presentations folder:
 
 ```
 presentations/
-├── deck-init.js              # Shared — Reveal.js initializer
-├── plugin/slide-controller/index.js    # Shared — D3 animation framework
-│
 ├── my-talk/
 │   ├── my-talk.md            # Required — slide content in Markdown
 │   ├── deck.css              # Optional — custom styles for this deck
@@ -59,6 +58,8 @@ presentations/
 └── legacy-talk/
     └── index.html            # Also supported — full custom HTML
 ```
+
+No shared files (Reveal.js, DeckInit, SlideController) need to exist in this folder — the app provides them all.
 
 ### Per-Deck Files
 
