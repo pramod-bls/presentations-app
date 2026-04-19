@@ -21,8 +21,9 @@ The app bundles and serves several shared layers so presentations don't ship the
 | **DeckInit** | `reveal/deck-init.js` | Shared initializer — sensible defaults, auto-detects loaded plugins |
 | **SlideController** | `reveal/plugin/slide-controller/index.js` | Step-based slide animations controlled by Enter (advance) and R (reset) |
 | **D3 helpers (opt-in)** | `reveal/plugin/slide-controller/d3-helpers.js` | SVG/animation helpers on top of SlideController. Load via `scripts:` front-matter. |
-| **Custom theme presets** | `reveal/themes/<name>/theme.json` (+ optional `theme.css`, logo) | Named bundles of fonts, colors, logo, and footer defaults. Activate with `theme:` front-matter. |
+| **Custom theme presets** | `reveal/themes/<name>/theme.json` (+ optional `theme.css`, logo) | Named bundles of fonts, colors, logo, and footer defaults. Ships `TEMPLATE` (starting point) and `custom-sample` (populated reference). Activate with `theme:` front-matter. |
 | **Reveal built-in themes** | `reveal/vendor/themes/<name>.css` | Stock Reveal.js theme CSS (beige, black, blood, dracula, league, moon, night, serif, simple, sky, solarized, white). Activate with `theme: <name>`. |
+| **Reveal theme Sass sources** | `reveal/vendor/themes/src/<name>.scss` | Unminified upstream Sass for each built-in theme. Reference material for custom-theme authors; not loaded at runtime. |
 | **Vendor libraries** | `reveal/vendor/d3.min.js`, `reveal/vendor/anime.min.js` | Bundled copies of d3 and anime.js. Reference from `scripts:` as `/reveal/vendor/d3.min.js`. |
 
 All of `reveal/` is included in packaged app builds (see `forge.config.js` → `extraResource`), so decks can rely on these paths without network access.
@@ -183,12 +184,30 @@ theme: dracula       # uses Reveal's built-in dracula.css
 
 Reveal built-in themes have no metadata — they're CSS only. Any `font`, `accentColor`, `logo`, or `footer` front-matter keys still apply on top of them.
 
-The app ships `custom-sample` as a starting point. To create your own:
+The app ships two presets as starting points:
 
-- **File → Copy Built-in Theme to My Folder…** clones a bundled theme into your `_themes/` folder and opens it in Finder/Explorer.
-- **File → Open User Themes Folder** opens `_themes/` directly so you can create a theme from scratch or edit an existing one.
+- **`TEMPLATE`** — the **recommended authoring starting point**. Every key in its `theme.json` is one you might want to change; its `theme.css` has commented-out examples of every common tweak. A `README.md` inside the theme folder walks through the workflow.
+- **`custom-sample`** — a populated reference theme (Inter font, navy background, cyan accent). Clone this if you want to see a complete, working theme.
 
-Rename the cloned folder to whatever name you want (`my-brand`, `conference-2026`, etc.), edit `theme.json`, and reference it with `theme: my-brand` in a deck.
+To create your own:
+
+- **File → Copy Built-in Theme to My Folder…** clones a bundled theme into your `_themes/` folder and opens it in Finder/Explorer. Pick `TEMPLATE` for a clean slate.
+- **File → Open User Themes Folder** opens `_themes/` directly.
+
+Rename the cloned folder to whatever name you want (`my-brand`, `conference-2026`, etc.), edit `theme.json` and `theme.css`, then reference it with `theme: my-brand` in a deck.
+
+**Advanced: styling via CSS custom properties.** Reveal 6 exposes every themeable value as a `--r-*` custom property on `:root`. Your theme's `theme.css` can override them directly:
+
+```css
+.reveal {
+  --r-main-font: "Inter", sans-serif;
+  --r-heading-color: #fff;
+  --r-link-color: #42affa;
+  --r-heading-text-transform: none;
+}
+```
+
+Full list of custom properties: `reveal/vendor/themes/src/template/settings.scss` (unminified Sass source, bundled for reference). Individual Reveal built-in themes are in `reveal/vendor/themes/src/*.scss` — handy to diff against for inspiration.
 
 `theme.json` accepts the same keys allowed in front-matter (the theme/chrome/color/font set). Everything else lives in `theme.css` or the deck's own `deck.css`. Edit `theme.json` and restart the app to see changes (themes are cached for the app's lifetime).
 

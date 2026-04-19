@@ -45,15 +45,21 @@ theme: black     # any Reveal.js built-in: beige, black, blood, dracula,
 
 ### …create my own theme?
 
-Menu: **File → Copy Built-in Theme to My Folder…**, pick `custom-sample`.
+Menu: **File → Copy Built-in Theme to My Folder…**, pick **`TEMPLATE`** — that's the authoring starting point with commented hints for every common tweak.
 
-The app copies it to `<presentations-folder>/_themes/custom-sample/` and opens the folder. Rename the folder to your brand name, edit `theme.json`, drop your logo in, then reference it from a deck:
+The app copies it to `<presentations-folder>/_themes/TEMPLATE/` and opens the folder. Rename the folder to your brand name (e.g. `my-brand`), edit `theme.json`, swap `logo.svg` for your own, and uncomment sections of `theme.css` as you need them.
+
+Reference from a deck:
 
 ```yaml
 ---
 theme: my-brand
 ---
 ```
+
+Look for `reveal/themes/TEMPLATE/README.md` inside the cloned folder — it walks through the workflow in detail.
+
+Alternative: pick **`custom-sample`** instead of `TEMPLATE` — it's a pre-populated reference theme (Inter font, navy/cyan) so you can see what a complete theme looks like before editing.
 
 ### …change just the accent color?
 

@@ -56,6 +56,17 @@ const THEMES_SRC_DIR = 'dist/theme';                      // black.css, white.cs
 // Themes we skip (too large due to embedded fonts).
 const SKIP_THEMES = new Set(['black-contrast.css', 'white-contrast.css']);
 
+// Sass sources for each theme (fetched from GitHub since npm tarball
+// only ships dist/). Mirrors css/theme/*.scss upstream. Kept for
+// reference as users author their own themes.
+const SASS_THEMES = [
+  'beige', 'black', 'blood', 'dracula', 'league', 'moon',
+  'night', 'serif', 'simple', 'sky', 'solarized', 'white',
+];
+const SASS_TEMPLATE_PARTIALS = [
+  'settings.scss', 'mixins.scss', 'theme.scss', 'exposer.scss',
+];
+
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
 const targetVersion = args.find((a) => !a.startsWith('--')) || 'latest';
@@ -103,6 +114,17 @@ async function fetchBuffer(url) {
   const res = await fetch(url);
   if (!res.ok) die(`HTTP ${res.status} fetching ${url}`);
   return Buffer.from(await res.arrayBuffer());
+}
+
+// Non-fatal variant — returns null on any failure.
+async function tryFetchBuffer(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return Buffer.from(await res.arrayBuffer());
+  } catch {
+    return null;
+  }
 }
 
 async function resolveTarball(version) {
@@ -167,7 +189,7 @@ async function main() {
   log('Extracting…');
   const pkgDir = extractTarball(buf);
 
-  const summary = { core: [], plugins: [], highlightThemes: 0, themes: 0, missing: [] };
+  const summary = { core: [], plugins: [], highlightThemes: 0, themes: 0, sassSources: 0, missing: [] };
 
   // Core files
   for (const [dst, srcRel] of Object.entries(CORE_FILES)) {
@@ -207,6 +229,32 @@ async function main() {
     );
   }
 
+  // Sass sources → vendor/themes/src/ (GitHub raw, not in npm tarball).
+  // Kept as reference material for users authoring custom themes.
+  const sassDst = join(VENDOR_THEMES, 'src');
+  const sassTemplateDst = join(sassDst, 'template');
+  if (!DRY_RUN) {
+    mkdirSync(sassDst, { recursive: true });
+    mkdirSync(sassTemplateDst, { recursive: true });
+  }
+  const rawBase = `https://raw.githubusercontent.com/hakimel/reveal.js/${resolvedVersion}/css/theme`;
+  for (const name of SASS_THEMES) {
+    const src = await tryFetchBuffer(`${rawBase}/${name}.scss`);
+    if (src) {
+      if (!DRY_RUN) writeFileSync(join(sassDst, `${name}.scss`), src);
+      summary.sassSources++;
+    }
+  }
+  for (const partial of SASS_TEMPLATE_PARTIALS) {
+    const src = await tryFetchBuffer(`${rawBase}/template/${partial}`);
+    if (src) {
+      if (!DRY_RUN) writeFileSync(join(sassTemplateDst, partial), src);
+      summary.sassSources++;
+    }
+  }
+  const readme = await tryFetchBuffer(`${rawBase}/README.md`);
+  if (readme && !DRY_RUN) writeFileSync(join(sassDst, 'README.md'), readme);
+
   // Cleanup
   if (!DRY_RUN) rmSync(dirname(pkgDir), { recursive: true, force: true });
 
@@ -217,6 +265,7 @@ async function main() {
   log(`Plugins:           ${summary.plugins.length} updated`);
   log(`Highlight themes:  ${summary.highlightThemes} files`);
   log(`Reveal themes:     ${summary.themes} files (skipped ${[...SKIP_THEMES].join(', ')})`);
+  log(`Sass sources:      ${summary.sassSources} files (for custom-theme authoring)`);
   if (summary.missing.length) {
     warn(`\nSome files were not found in the tarball:\n  - ${summary.missing.join('\n  - ')}`);
     warn('These paths may have moved upstream. Adjust CORE_FILES / PLUGIN_FILES in this script.');

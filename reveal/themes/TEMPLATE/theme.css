@@ -1,0 +1,166 @@
+/*
+ * TEMPLATE theme — custom CSS starting point.
+ *
+ * Most theming should be done via theme.json (fonts, colors, logo,
+ * footer). Use this file for fine-grained overrides that don't fit a
+ * declarative key.
+ *
+ * Load order: reveal.css → theme.json-generated <style> → this file →
+ * deck.css. Rules here beat theme.json but lose to deck-level overrides,
+ * which is usually the order you want.
+ *
+ * Uncomment sections below as you need them.
+ */
+
+/* ─── Reveal CSS custom properties ──────────────────────────
+ * The recommended way to tune fonts, colors, and sizes. Full list
+ * in reveal/vendor/themes/src/template/settings.scss.
+ */
+
+/*
+.reveal {
+  --r-main-font: "Inter", sans-serif;
+  --r-main-font-size: 42px;
+  --r-main-color: #eee;
+
+  --r-heading-font: "Inter", sans-serif;
+  --r-heading-font-weight: 600;
+  --r-heading-color: #fff;
+  --r-heading-text-transform: none;
+  --r-heading-letter-spacing: -0.02em;
+  --r-heading1-size: 2.8em;
+  --r-heading2-size: 1.8em;
+  --r-heading3-size: 1.4em;
+
+  --r-link-color: #42affa;
+  --r-link-color-hover: #8dcffc;
+
+  --r-selection-color: #fff;
+  --r-selection-background-color: #42affa;
+
+  --r-code-font: "JetBrains Mono", monospace;
+
+  --r-background: #1a1a1a;
+}
+*/
+
+/* ─── Heading tweaks ────────────────────────────────────────
+ * Example: make h1/h2 feel tighter than Reveal's defaults.
+ */
+
+/*
+.reveal .slides section h1,
+.reveal .slides section h2 {
+  letter-spacing: -0.03em;
+  font-weight: 700;
+  margin-bottom: 0.3em;
+}
+
+.reveal .slides section h3,
+.reveal .slides section h4 {
+  font-weight: 500;
+  opacity: 0.92;
+}
+*/
+
+/* ─── Links ─────────────────────────────────────────────────
+ */
+
+/*
+.reveal a {
+  border-bottom: 1px dotted currentColor;
+  transition: border-color 0.2s, color 0.2s;
+}
+.reveal a:hover {
+  border-bottom-color: transparent;
+}
+*/
+
+/* ─── Progress bar ──────────────────────────────────────────
+ * The accentColor key in theme.json already sets this. Override here
+ * for thickness / position / opacity.
+ */
+
+/*
+.reveal .progress {
+  height: 3px;
+  opacity: 0.8;
+}
+*/
+
+/* ─── Code blocks ───────────────────────────────────────────
+ */
+
+/*
+.reveal pre {
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  padding: 16px;
+  font-size: 0.7em;
+  line-height: 1.4;
+}
+
+.reveal code {
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+}
+*/
+
+/* ─── Chrome tweaks ─────────────────────────────────────────
+ * The logo and footer the deck template renders. Available hooks:
+ *   .deck-chrome          — full-screen overlay container
+ *   .deck-chrome .logo    — the <img> element
+ *   .deck-chrome .footer  — the footer strip
+ *   .deck-chrome .footer .left   — left side span
+ *   .deck-chrome .footer .right  — right side span
+ */
+
+/*
+.deck-chrome .logo {
+  color: #fff;               * pairs with a currentColor-filled SVG *
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.deck-chrome .logo:hover {
+  opacity: 1;
+}
+
+.deck-chrome .footer {
+  font-variant-numeric: tabular-nums;   * stable digits in {current}/{total} *
+  letter-spacing: 0.02em;
+  font-size: 13px;
+}
+*/
+
+/* ─── Fragments ─────────────────────────────────────────────
+ * Reveal defines fragment.fade-in, .fade-up, .highlight-red, etc.
+ * You can add your own:
+ */
+
+/*
+.reveal .slides section .fragment.glow {
+  opacity: 0.3;
+  transition: opacity 0.4s, text-shadow 0.4s;
+}
+.reveal .slides section .fragment.glow.visible {
+  opacity: 1;
+  text-shadow: 0 0 12px var(--r-link-color);
+}
+*/
+
+/* ─── Slide backgrounds ─────────────────────────────────────
+ * Add a subtle vignette to every slide:
+ */
+
+/*
+.reveal .slides > section {
+  position: relative;
+}
+.reveal .slides > section::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.25) 100%);
+  pointer-events: none;
+}
+*/
