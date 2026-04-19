@@ -362,13 +362,24 @@ Set `pdfSeparateFragments: true` in front-matter (default) to get one page per f
 
 ### …make a deck run without the app (standalone HTML)?
 
-Currently not directly — the app generates the HTML at request time using its protocol handler to serve `/reveal/...` paths. To export a standalone deck:
+Open the deck, then **File → Export Current Deck as Standalone HTML…**. Pick a destination folder; the app creates `<dest>/<deckname>/` with a complete, self-contained copy:
 
-1. Open the deck in the app.
-2. In DevTools (View → Toggle DevTools), switch to the deck iframe's context, run `document.documentElement.outerHTML` and save the result.
-3. Replace `/reveal/...` paths with copies of the files from the app's `reveal/` folder.
+```
+my-deck/
+├── index.html          # generated with relative paths
+├── deck.md             # your source, preserved
+├── deck.js / deck.css  # if present
+├── assets/             # your assets
+├── reveal/             # copy of the app's reveal.js + CSS
+├── plugin/             # copy of the plugins + slide-controller
+└── themes/<name>/      # theme copied if your deck uses one
+```
 
-A dedicated "export standalone" feature isn't built yet. File an issue if you need it.
+You can zip this folder, host it on a web server, or just double-click the `index.html` — it works in any browser, no app required. The app opens the exported folder in Finder/Explorer on success.
+
+Caveats:
+- External CDN references in `scripts:` / `styles:` still require internet to load at runtime.
+- The **Reveal built-in speaker-notes window** (`S` key) only works when served via HTTP, not via `file://` — host the exported folder with any static server (e.g. `python -m http.server`) if you need speaker view.
 
 ---
 

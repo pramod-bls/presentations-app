@@ -172,6 +172,26 @@ function buildMenu() {
             }
           },
         },
+        {
+          label: 'Export Current Deck as Standalone HTML…',
+          click: async () => {
+            const folder = getActiveDeckFolder();
+            if (!folder) {
+              await dialog.showMessageBox(mainWindow, {
+                type: 'info',
+                message: 'No deck is open',
+                detail: 'Open a deck first, then choose Export.',
+              });
+              return;
+            }
+            try {
+              const out = await exportDeckStandalone(folder);
+              if (out) shell.openPath(out);
+            } catch (err) {
+              await dialog.showErrorBox('Standalone export failed', String(err));
+            }
+          },
+        },
         { type: 'separator' },
         {
           label: 'Open User Themes Folder',
@@ -781,6 +801,168 @@ async function waitForRevealReady(webContents, timeoutMs = 3000) {
  * @param {string} deckFolder Absolute path to the deck's folder.
  * @returns {Promise<string>} Path to the written PNG.
  */
+/**
+ * Export the deck at `deckFolder` as a self-contained folder. Copies
+ * the deck's own files plus the bundled reveal/plugin/theme assets
+ * the deck references, and rewrites absolute app-served paths
+ * (`/reveal/...`, `/plugin/...`, `/user-themes/...`) to relative ones
+ * so the output runs in any browser without the app.
+ *
+ * @param {string} deckFolder Absolute path to the deck folder.
+ * @returns {Promise<string|null>} Path to the export folder, or null if cancelled/failed.
+ */
+async function exportDeckStandalone(deckFolder) {
+  if (!deckFolder) return null;
+
+  const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+    title: 'Choose export destination folder',
+    properties: ['openDirectory', 'createDirectory'],
+  });
+  if (canceled || !filePaths.length) return null;
+
+  const deckName = path.basename(deckFolder);
+  const outDir = path.join(filePaths[0], deckName);
+
+  if (fs.existsSync(outDir)) {
+    const confirm = await dialog.showMessageBox(mainWindow, {
+      type: 'warning',
+      buttons: ['Cancel', 'Overwrite'],
+      cancelId: 0,
+      defaultId: 0,
+      message: `${deckName} already exists in the destination`,
+      detail: `Replace ${outDir} with the new export?`,
+    });
+    if (confirm.response !== 1) return null;
+    fs.rmSync(outDir, { recursive: true, force: true });
+  }
+
+  fs.mkdirSync(outDir, { recursive: true });
+
+  // Copy the deck folder itself.
+  for (const entry of fs.readdirSync(deckFolder, { withFileTypes: true })) {
+    // Skip index.html if present — we regenerate it with rewritten paths.
+    if (entry.name === 'index.html') continue;
+    const src = path.join(deckFolder, entry.name);
+    const dst = path.join(outDir, entry.name);
+    fs.cpSync(src, dst, { recursive: true });
+  }
+
+  // Copy the app's reveal/ core (reveal.js, reveal.css, reset.css, deck-init.js)
+  // plus all plugins we reference. We skip reveal/themes/ and reveal/vendor/themes/
+  // unless the deck actually uses them.
+  const appRevealDir = path.join(app.getAppPath(), 'reveal');
+  const outRevealDir = path.join(outDir, 'reveal');
+  fs.mkdirSync(outRevealDir, { recursive: true });
+  for (const file of ['reveal.js', 'reveal.css', 'reset.css', 'deck-init.js']) {
+    const src = path.join(appRevealDir, file);
+    if (fs.existsSync(src)) fs.copyFileSync(src, path.join(outRevealDir, file));
+  }
+
+  // Copy plugin/ (markdown, highlight, notes, zoom, search, slide-controller).
+  const outPluginDir = path.join(outDir, 'plugin');
+  fs.cpSync(path.join(appRevealDir, 'plugin'), outPluginDir, { recursive: true });
+
+  // Parse front-matter to see what theme / vendor scripts the deck uses.
+  const deckMd = path.join(deckFolder, 'deck.md');
+  let frontMatter = {};
+  let body = '';
+  if (fs.existsSync(deckMd)) {
+    const parsed = parseFrontMatter(fs.readFileSync(deckMd, 'utf-8'));
+    frontMatter = parsed.frontMatter;
+    body = parsed.body;
+  }
+
+  // Copy the active theme folder if any. Mirrors the loader's lookup order:
+  // user _themes first, then bundled reveal/themes, then reveal vendor theme CSS.
+  let themeCssHrefExported = null;
+  let frontMatterMerged = frontMatter;
+  if (typeof frontMatter.theme === 'string') {
+    const themeName = frontMatter.theme;
+    const userThemeDir = userThemesDir() ? path.join(userThemesDir(), themeName) : null;
+    const bundledThemeDir = path.join(appRevealDir, 'themes', themeName);
+    const revealThemeCss = path.join(appRevealDir, 'vendor', 'themes', `${themeName}.css`);
+
+    let srcThemeDir = null;
+    if (userThemeDir && fs.existsSync(path.join(userThemeDir, 'theme.json'))) {
+      srcThemeDir = userThemeDir;
+    } else if (fs.existsSync(path.join(bundledThemeDir, 'theme.json'))) {
+      srcThemeDir = bundledThemeDir;
+    }
+
+    if (srcThemeDir) {
+      const outThemeDir = path.join(outDir, 'themes', themeName);
+      fs.cpSync(srcThemeDir, outThemeDir, { recursive: true });
+      if (fs.existsSync(path.join(outThemeDir, 'theme.css'))) {
+        themeCssHrefExported = `themes/${themeName}/theme.css`;
+      }
+      // Merge theme.json values into front-matter (deck still wins) so
+      // the generated HTML has the final theme baked in with relative
+      // paths.
+      try {
+        const rawTheme = JSON.parse(fs.readFileSync(path.join(srcThemeDir, 'theme.json'), 'utf-8'));
+        const themeValues = sanitizeThemeObject(rawTheme);
+        if (typeof themeValues.logo === 'string' && !/^(https?:\/\/|\/)/.test(themeValues.logo)) {
+          themeValues.logo = `themes/${themeName}/${themeValues.logo}`;
+        }
+        frontMatterMerged = mergeTheme(themeValues, frontMatter);
+      } catch { /* ignore */ }
+    } else if (fs.existsSync(revealThemeCss)) {
+      // Reveal built-in theme — just copy the single CSS file.
+      const outVendorThemes = path.join(outDir, 'reveal', 'vendor', 'themes');
+      fs.mkdirSync(outVendorThemes, { recursive: true });
+      fs.copyFileSync(revealThemeCss, path.join(outVendorThemes, `${themeName}.css`));
+    }
+  }
+
+  // Copy referenced /reveal/vendor/* scripts (d3, anime, etc.)
+  const scripts = Array.isArray(frontMatterMerged.scripts) ? frontMatterMerged.scripts : [];
+  const styles = Array.isArray(frontMatterMerged.styles) ? frontMatterMerged.styles : [];
+  for (const list of [scripts, styles]) {
+    for (const entry of list) {
+      if (typeof entry !== 'string') continue;
+      // App-served local paths: /reveal/..., /plugin/..., /user-themes/...
+      const m = entry.match(/^\/(reveal|plugin|user-themes)\/(.+)$/);
+      if (!m) continue;
+      let srcPath, dstRel;
+      if (m[1] === 'reveal') {
+        srcPath = path.join(appRevealDir, m[2]);
+        dstRel = path.join('reveal', m[2]);
+      } else if (m[1] === 'plugin') {
+        srcPath = path.join(appRevealDir, 'plugin', m[2]);
+        dstRel = path.join('plugin', m[2]);
+      } else if (m[1] === 'user-themes') {
+        if (!userThemesDir()) continue;
+        srcPath = path.join(userThemesDir(), m[2]);
+        dstRel = path.join('themes', m[2]);
+      }
+      if (!srcPath || !fs.existsSync(srcPath)) continue;
+      const dstPath = path.join(outDir, dstRel);
+      fs.mkdirSync(path.dirname(dstPath), { recursive: true });
+      fs.copyFileSync(srcPath, dstPath);
+    }
+  }
+
+  // Generate index.html using the same template as runtime, then rewrite
+  // absolute app-served paths to relative ones.
+  let html = renderDeckHtml({
+    frontMatter: frontMatterMerged,
+    markdownBody: body,
+    hasDeckJs: fs.existsSync(path.join(deckFolder, 'deck.js')),
+    hasDeckCss: fs.existsSync(path.join(deckFolder, 'deck.css')),
+    themeCssHref: themeCssHrefExported,
+    themeName: typeof frontMatter.theme === 'string' ? frontMatter.theme : null,
+  });
+  // Path rewrites. Order matters: /user-themes/<name>/ → themes/<name>/
+  // (we mirrored it one level up), then plain /reveal and /plugin → relative.
+  html = html.replace(/\/user-themes\//g, 'themes/');
+  html = html.replace(/"\/reveal\//g, '"reveal/');
+  html = html.replace(/"\/plugin\//g, '"plugin/');
+
+  fs.writeFileSync(path.join(outDir, 'index.html'), html);
+
+  return outDir;
+}
+
 /**
  * Export the deck at `deckFolder` as a PDF via Reveal's built-in
  * print-pdf mode. Shows a save dialog, spins up a hidden BrowserWindow
