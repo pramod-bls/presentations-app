@@ -1,29 +1,33 @@
+/**
+ * Home-screen renderer.
+ *
+ * Runs in the main BrowserWindow. Responsible for:
+ *   - Showing the welcome screen if no presentations folder is configured.
+ *   - Rendering a grid of deck cards (each with a cached thumbnail).
+ *   - Mounting a sandboxed `<iframe>` viewer over the grid when a card is
+ *     clicked — deck JS runs inside that iframe, isolated from the host.
+ *
+ * Talks to the main process through `window.electronAPI`, defined in
+ * preload.js.
+ */
 import './index.css';
 
+/** Turn a folder name like `my_intro-deck` into `My Intro Deck`. */
 function formatName(name) {
   return name
     .replace(/[_-]/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function scaleIframes() {
-  document.querySelectorAll('.thumbnail').forEach((el) => {
-    const iframe = el.querySelector('iframe');
-    if (iframe) {
-      const scale = el.offsetWidth / 1920;
-      iframe.style.transform = 'scale(' + scale + ')';
-      el.style.paddingTop = (1080 * scale / el.offsetWidth * 100) + '%';
-    }
-  });
-}
-
+/** Render the welcome screen (shown when no presentations folder is set). */
 function showWelcome() {
   const content = document.getElementById('content');
   content.innerHTML =
     '<div class="welcome">' +
-    '<p>Open a folder containing your presentations to get started.</p>' +
-    '<p style="color:#666;font-size:0.85em;">Each presentation should be in its own subfolder with an index.html file.</p>' +
-    '<button id="open-btn">Open Presentations Folder</button>' +
+    '<p>Open a presentation to get started.</p>' +
+    '<p style="color:#666;font-size:0.85em;">Pick either a single deck folder (contains <code>deck.md</code> or <code>index.html</code>) ' +
+    'or a parent folder whose subfolders are decks.</p>' +
+    '<button id="open-btn">Open Folder</button>' +
     '</div>';
   document.getElementById('open-btn').addEventListener('click', () => {
     window.electronAPI.openFolder().then((folder) => {
@@ -32,8 +36,11 @@ function showWelcome() {
   });
 }
 
+/**
+ * Render the "currently viewing: /path" bar with a Change button.
+ * Called before renderDecks when a folder is configured.
+ */
 function showFolderBar(folderPath) {
-  // Remove existing bar if any
   document.querySelectorAll('.folder-bar').forEach((el) => el.remove());
 
   const bar = document.createElement('div');
@@ -50,12 +57,78 @@ function showFolderBar(folderPath) {
   });
 }
 
+/**
+ * Mount a fullscreen viewer overlay containing the deck inside a sandboxed
+ * iframe. `allow-scripts` without `allow-same-origin` is the core of the
+ * untrusted-deck isolation model (see ARCHITECTURE.md → Security).
+ *
+ * Click the "⬅ Home" button to remove the overlay and return to the grid.
+ *
+ * @param {string} deckPath `file://` URL to the deck's (possibly generated)
+ *   index.html.
+ * @param {string} deckName Display name — set on the iframe `title` for a11y.
+ */
+function openDeckViewer(deckPath, deckName) {
+  const existing = document.getElementById('deck-viewer');
+  if (existing) existing.remove();
+
+  const viewer = document.createElement('div');
+  viewer.id = 'deck-viewer';
+  viewer.className = 'deck-viewer';
+
+  const iframe = document.createElement('iframe');
+  iframe.src = deckPath;
+  iframe.setAttribute('sandbox', 'allow-scripts');
+  iframe.setAttribute('title', deckName);
+  iframe.setAttribute('allowfullscreen', '');
+  iframe.addEventListener('load', () => iframe.focus());
+
+  const homeBtn = document.createElement('button');
+  homeBtn.className = 'deck-viewer-home';
+  homeBtn.textContent = '⬅ Home';
+  homeBtn.addEventListener('click', () => viewer.remove());
+
+  viewer.appendChild(iframe);
+  viewer.appendChild(homeBtn);
+  document.body.appendChild(viewer);
+  iframe.focus();
+}
+
+/**
+ * Ask the main process for a deck thumbnail PNG and fade it in over
+ * the placeholder. Silent no-op if the capture fails.
+ *
+ * @param {HTMLElement} thumb The card's `.thumbnail` container.
+ * @param {string} deckFolder Absolute path to the deck folder.
+ */
+async function loadThumbnail(thumb, deckFolder) {
+  if (!deckFolder) return;
+  const result = await window.electronAPI.getThumbnail(deckFolder);
+  if (!result || !result.path) return;
+  const img = document.createElement('img');
+  img.className = 'thumbnail-img';
+  img.src = 'file://' + result.path + '?t=' + Date.now();
+  img.alt = '';
+  img.addEventListener('load', () => {
+    const placeholder = thumb.querySelector('.thumbnail-placeholder');
+    if (placeholder) placeholder.remove();
+  });
+  thumb.appendChild(img);
+}
+
+/**
+ * Render the deck grid, attaching click handlers and kicking off
+ * async thumbnail loads for each card.
+ *
+ * @param {Array<{ name: string, path: string, folder: string }>} decks
+ */
 function renderDecks(decks) {
   const content = document.getElementById('content');
   if (decks.length === 0) {
     content.innerHTML =
-      '<div class="loading">No presentations found in this folder.<br>' +
-      'Each presentation needs its own subfolder with an index.html file.</div>';
+      '<div class="loading">No presentations found.<br>' +
+      'Pick either a deck folder (contains <code>deck.md</code> or <code>index.html</code>) ' +
+      'or a folder whose subfolders are decks.</div>';
     return;
   }
 
@@ -65,20 +138,15 @@ function renderDecks(decks) {
   decks.forEach((deck) => {
     const card = document.createElement('div');
     card.className = 'card';
-    card.addEventListener('click', () => {
-      window.electronAPI.openDeck(deck.path);
-    });
+    card.addEventListener('click', () => openDeckViewer(deck.path, deck.name));
 
     const thumb = document.createElement('div');
     thumb.className = 'thumbnail';
 
-    const iframe = document.createElement('iframe');
-    iframe.src = deck.path;
-    iframe.loading = 'lazy';
-    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
-    iframe.setAttribute('tabindex', '-1');
-    iframe.setAttribute('aria-hidden', 'true');
-    thumb.appendChild(iframe);
+    const placeholder = document.createElement('div');
+    placeholder.className = 'thumbnail-placeholder';
+    placeholder.textContent = formatName(deck.name);
+    thumb.appendChild(placeholder);
 
     const title = document.createElement('div');
     title.className = 'card-title';
@@ -87,15 +155,18 @@ function renderDecks(decks) {
     card.appendChild(thumb);
     card.appendChild(title);
     grid.appendChild(card);
+
+    loadThumbnail(thumb, deck.folder);
   });
 
   content.innerHTML = '';
   content.appendChild(grid);
-
-  scaleIframes();
-  window.addEventListener('resize', scaleIframes);
 }
 
+/**
+ * Top-level bootstrap: fetch config, decide welcome vs grid, then render.
+ * Runs automatically on module load (see bottom of file).
+ */
 async function loadDecks() {
   const content = document.getElementById('content');
   content.innerHTML = '<div class="loading">Loading presentations...</div>';

@@ -1,0 +1,19 @@
+{
+  "font": "Inter",
+  "monospaceFont": "JetBrains Mono",
+  "backgroundColor": "#0f172a",
+  "textColor": "#e2e8f0",
+  "headingColor": "#f8fafc",
+  "accentColor": "#38bdf8",
+  "linkColor": "#38bdf8",
+  "highlightTheme": "monokai",
+
+  "logo": "logo.svg",
+  "logoPosition": "bottom-right",
+  "logoHeight": 40,
+
+  "footer": {
+    "left": "",
+    "right": "{current}/{total}"
+  }
+}

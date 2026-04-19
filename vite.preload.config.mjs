@@ -1,4 +1,6 @@
 import { defineConfig } from 'vite';
+import { hotRestartMain } from './vite-hot-restart.mjs';
 
-// https://vitejs.dev/config
-export default defineConfig({});
+export default defineConfig({
+  plugins: [hotRestartMain('preload')],
+});

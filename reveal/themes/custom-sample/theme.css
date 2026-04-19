@@ -1,0 +1,36 @@
+/*
+ * custom-sample — reference theme CSS.
+ *
+ * Colors, fonts, and logo are declared in theme.json and applied by the
+ * deck template. This file adds finish that's hard to express in JSON.
+ */
+
+.reveal .slides section h1,
+.reveal .slides section h2 {
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+.reveal .slides section h3,
+.reveal .slides section h4 {
+  font-weight: 500;
+  opacity: 0.92;
+}
+
+.reveal .progress {
+  height: 3px;
+}
+
+.deck-chrome .logo {
+  color: #f8fafc;   /* pairs with the logo.svg's currentColor fill */
+  opacity: 0.75;
+  transition: opacity 0.2s;
+}
+.deck-chrome .logo:hover {
+  opacity: 1;
+}
+
+.deck-chrome .footer {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}

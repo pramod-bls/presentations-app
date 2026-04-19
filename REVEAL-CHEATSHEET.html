@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Reveal.js Cheat Sheet</title>
+<style>
+  :root {
+    --fg: #1a1a1a;
+    --muted: #666;
+    --accent: #0b57d0;
+    --rule: #d7dbe0;
+    --bg: #ffffff;
+    --code-bg: #f5f6f8;
+    --code-fg: #111;
+    --table-head: #f0f3f8;
+    --label: #6a6a6a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.45;
+    padding: 18mm 14mm;
+    max-width: 200mm;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 20pt;
+    letter-spacing: -0.02em;
+    margin: 0 0 4pt;
+  }
+  h1 + p.lead {
+    color: var(--muted);
+    margin: 0 0 12pt;
+    font-size: 10pt;
+  }
+  h2 {
+    font-size: 13pt;
+    margin: 16pt 0 4pt;
+    padding-bottom: 2pt;
+    border-bottom: 1px solid var(--rule);
+    break-after: avoid;
+  }
+  h3 {
+    font-size: 11.5pt;
+    margin: 10pt 0 2pt;
+    color: var(--label);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    break-after: avoid;
+  }
+  p { margin: 4pt 0; }
+  code, pre {
+    font-family: "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 9pt;
+  }
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 8px 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 6pt 0 8pt;
+    border: 1px solid var(--rule);
+    break-inside: avoid;
+  }
+  pre code { background: transparent; padding: 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 4pt 0 10pt;
+    font-size: 9.5pt;
+    break-inside: avoid;
+  }
+  thead th {
+    background: var(--table-head);
+    text-align: left;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--rule);
+    font-weight: 600;
+  }
+  tbody td {
+    padding: 3px 8px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  tbody td code {
+    white-space: nowrap;
+  }
+  ul, ol { margin: 4pt 0 8pt 16pt; padding: 0; }
+  li { margin: 1pt 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  hr {
+    border: 0;
+    border-top: 1px solid var(--rule);
+    margin: 14pt 0;
+  }
+  .columns { column-count: 2; column-gap: 10mm; }
+  .columns > * { break-inside: avoid; }
+
+  .kbd {
+    background: #f0f3f8;
+    border: 1px solid #c8ced8;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-family: inherit;
+    font-size: 9.5pt;
+    font-weight: 600;
+  }
+
+  .small { font-size: 9pt; color: var(--muted); }
+  .pill {
+    display: inline-block;
+    background: #eef5ff;
+    color: var(--accent);
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 8.5pt;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── Print-specific layout ───────────────────────────── */
+  @page {
+    size: Letter;
+    margin: 14mm;
+  }
+  @media print {
+    body {
+      padding: 0;
+      max-width: none;
+      font-size: 9.5pt;
+      line-height: 1.4;
+    }
+    h1 { font-size: 18pt; }
+    h2 { font-size: 12pt; page-break-after: avoid; }
+    h3 { font-size: 10.5pt; page-break-after: avoid; }
+    h2, h3 { break-after: avoid; }
+    table, pre { break-inside: avoid; }
+    tr { break-inside: avoid; }
+    a { color: var(--fg); text-decoration: none; }
+    .no-print { display: none !important; }
+    /* Hint: browser may render these as page breaks */
+    .page-break { break-before: page; page-break-before: always; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Reveal.js Cheat Sheet</h1>
+<p class="lead">Quick reference for content flags, data attributes, classes, and the extras this app adds. Open this file in a browser and use <strong>File → Print → Save as PDF</strong> for a print-friendly handout.</p>
+
+<h2>Slide attributes</h2>
+<p class="small">Set via <code>&lt;!-- .slide: data-foo="bar" --&gt;</code> on the line before the slide content in markdown, or directly on a <code>&lt;section&gt;</code> in HTML decks.</p>
+
+<h3>Background</h3>
+<table>
+<thead><tr><th>Attribute</th><th>Values</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td><code>data-background-color</code></td><td>any CSS color</td><td>Solid background</td></tr>
+<tr><td><code>data-background-image</code></td><td>URL</td><td>Image background</td></tr>
+<tr><td><code>data-background-size</code></td><td><code>cover</code> / <code>contain</code> / <code>100px 200px</code></td><td>Image sizing</td></tr>
+<tr><td><code>data-background-position</code></td><td><code>center</code>, <code>top left</code>, …</td><td>Image position</td></tr>
+<tr><td><code>data-background-repeat</code></td><td><code>no-repeat</code> / <code>repeat</code></td><td>Tile behavior</td></tr>
+<tr><td><code>data-background-opacity</code></td><td>0–1</td><td>Dim the background</td></tr>
+<tr><td><code>data-background-video</code></td><td>URL (comma-separated fallbacks)</td><td>Video background</td></tr>
+<tr><td><code>data-background-video-loop</code></td><td>—</td><td>Loop video</td></tr>
+<tr><td><code>data-background-video-muted</code></td><td>—</td><td>Mute video</td></tr>
+<tr><td><code>data-background-iframe</code></td><td>URL</td><td>Webpage as background</td></tr>
+<tr><td><code>data-background-interactive</code></td><td>—</td><td>Allow clicking into iframe bg</td></tr>
+<tr><td><code>data-background-gradient</code></td><td><code>linear-gradient(...)</code></td><td>CSS gradient</td></tr>
+</tbody>
+</table>
+
+<h3>Transitions &amp; timing</h3>
+<table>
+<thead><tr><th>Attribute</th><th>Values</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td><code>data-transition</code></td><td><code>slide</code>, <code>fade</code>, <code>zoom</code>, <code>convex</code>, <code>concave</code>, <code>none</code></td><td>Per-slide transition</td></tr>
+<tr><td><code>data-transition-speed</code></td><td><code>default</code>, <code>fast</code>, <code>slow</code></td><td>Transition speed</td></tr>
+<tr><td><code>data-background-transition</code></td><td><code>slide</code>, <code>fade</code>, <code>zoom</code>, <code>convex</code>, <code>concave</code>, <code>none</code></td><td>How the bg switches</td></tr>
+<tr><td><code>data-autoslide</code></td><td>ms</td><td>Auto-advance this slide after N ms</td></tr>
+</tbody>
+</table>
+
+<h3>Metadata</h3>
+<table>
+<thead><tr><th>Attribute</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td><code>id="…"</code></td><td>Link to slide via <code>#/slide-id</code>; target with <code>SlideController</code></td></tr>
+<tr><td><code>data-state="foo bar"</code></td><td>Adds classes to <code>&lt;body&gt;</code> while this slide is active</td></tr>
+<tr><td><code>data-visibility="hidden"</code></td><td>Skip in navigation, keep in DOM</td></tr>
+<tr><td><code>data-visibility="uncounted"</code></td><td>Exclude from slide count</td></tr>
+<tr><td><code>data-no-logo</code> <span class="pill">app</span></td><td>Hide this app's chrome logo on this slide</td></tr>
+</tbody>
+</table>
+
+<hr />
+
+<h2>Fragments (per-element reveals)</h2>
+<p>Fragments appear one at a time as you press space/arrow within a single slide.</p>
+
+<pre><code>&lt;p class="fragment"&gt;Appears on first press&lt;/p&gt;
+&lt;p class="fragment fade-up"&gt;Slide + fade up&lt;/p&gt;
+&lt;p class="fragment highlight-red"&gt;Turns red when triggered&lt;/p&gt;</code></pre>
+
+<table>
+<thead><tr><th>Class (prefixed <code>fragment</code>)</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td><code>fade-in</code></td><td>Default — fade in on trigger</td></tr>
+<tr><td><code>fade-out</code></td><td>Fade out later (starts visible)</td></tr>
+<tr><td><code>fade-up</code> / <code>fade-down</code> / <code>fade-left</code> / <code>fade-right</code></td><td>Fade + slide in</td></tr>
+<tr><td><code>fade-in-then-out</code></td><td>Appear, then disappear</td></tr>
+<tr><td><code>fade-in-then-semi-out</code></td><td>Appear, then go semi-transparent</td></tr>
+<tr><td><code>grow</code> / <code>shrink</code></td><td>Scale up / down</td></tr>
+<tr><td><code>semi-fade-out</code></td><td>Fade to partial opacity</td></tr>
+<tr><td><code>strike</code></td><td>Strike-through</td></tr>
+<tr><td><code>highlight-red</code> / <code>-green</code> / <code>-blue</code></td><td>Turn text colored</td></tr>
+<tr><td><code>highlight-current-red</code> / <code>-green</code> / <code>-blue</code></td><td>Colored only during its step</td></tr>
+<tr><td><code>current-visible</code></td><td>Visible only during its step</td></tr>
+<tr><td><code>custom</code></td><td>Base class for your own CSS transitions</td></tr>
+</tbody>
+</table>
+
+<p><strong>Ordering with <code>data-fragment-index</code>:</strong></p>
+<pre><code>&lt;p class="fragment" data-fragment-index="2"&gt;Second&lt;/p&gt;
+&lt;p class="fragment" data-fragment-index="1"&gt;First&lt;/p&gt;
+&lt;p class="fragment" data-fragment-index="1"&gt;Also first (same index groups together)&lt;/p&gt;</code></pre>
+
+<hr />
+
+<h2>Media</h2>
+<table>
+<thead><tr><th>Attribute</th><th>On</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td><code>data-src</code></td><td><code>img</code>, <code>video</code>, <code>audio</code>, <code>iframe</code></td><td>Lazy-load — source only fetched when slide is near</td></tr>
+<tr><td><code>data-autoplay</code></td><td><code>video</code>, <code>audio</code>, <code>iframe</code></td><td>Auto-play when slide is shown</td></tr>
+<tr><td><code>data-preload</code></td><td><code>section</code> or media</td><td>Preload before the slide is reached</td></tr>
+<tr><td><code>data-preview-image</code></td><td><code>a</code></td><td>Click opens image overlay (lightbox)</td></tr>
+<tr><td><code>data-preview-link</code></td><td><code>a</code> or slide</td><td>Click opens URL in overlay iframe</td></tr>
+<tr><td><code>data-preview-video</code></td><td><code>a</code></td><td>Click opens video overlay</td></tr>
+<tr><td><code>controls</code></td><td><code>video</code>, <code>audio</code></td><td>Show native controls</td></tr>
+</tbody>
+</table>
+
+<pre><code>&lt;!-- Lazy-load a big video --&gt;
+&lt;video data-src="big.mp4" controls&gt;&lt;/video&gt;
+
+&lt;!-- Auto-play when shown, pause when leaving --&gt;
+&lt;video data-autoplay data-src="demo.mp4"&gt;&lt;/video&gt;
+
+&lt;!-- Click-to-preview full webpage --&gt;
+&lt;a href="https://example.com" data-preview-link&gt;Open example&lt;/a&gt;
+
+&lt;!-- Click-to-preview image (lightbox) --&gt;
+&lt;a href="big-diagram.png" data-preview-image&gt;&lt;img src="thumb.png"&gt;&lt;/a&gt;</code></pre>
+
+<hr class="page-break" />
+
+<h2>Code blocks (highlight.js plugin)</h2>
+<table>
+<thead><tr><th>Attribute</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td><code>data-trim</code></td><td>Trim leading/trailing whitespace</td></tr>
+<tr><td><code>data-noescape</code></td><td>Don't HTML-escape content</td></tr>
+<tr><td><code>data-line-numbers</code></td><td>Show line numbers. <code>"3,8-10"</code> highlights; <code>"1,3|5-7"</code> cycles as fragments</td></tr>
+<tr><td><code>data-ln-start-from</code></td><td>Starting line number</td></tr>
+<tr><td><code>data-language</code></td><td>Explicit language (overrides class detection)</td></tr>
+</tbody>
+</table>
+
+<pre><code>&lt;pre&gt;&lt;code data-trim data-line-numbers="1,3|5-7"&gt;
+function hello() {
+  console.log('hi');
+}
+&lt;/code&gt;&lt;/pre&gt;</code></pre>
+
+<p class="small">Press space three times: first highlights lines 1 &amp; 3, next highlights 5–7, next removes highlight.</p>
+
+<h2>Math (math plugin, MathJax)</h2>
+<pre><code>&lt;section&gt;
+  \[ e = mc^2 \]
+  $$ \sum_{i=1}^n i = \frac{n(n+1)}{2} $$
+&lt;/section&gt;</code></pre>
+
+<hr />
+
+<h2>Markdown syntax</h2>
+<pre><code>&lt;!-- Horizontal slide separator --&gt;
+---
+
+&lt;!-- Vertical sub-slide separator --&gt;
+--
+
+&lt;!-- Slide attribute --&gt;
+&lt;!-- .slide: data-background="#ff0000" --&gt;
+# Title
+
+&lt;!-- Element attribute (applies to line above) --&gt;
+Some text.
+&lt;!-- .element: class="fragment" --&gt;
+
+&lt;!-- Speaker notes --&gt;
+Regular content here.
+
+Note:
+Speaker notes (press S to view presenter window).</code></pre>
+
+<hr />
+
+<h2>Keyboard shortcuts</h2>
+<table>
+<thead><tr><th>Key</th><th>Action</th></tr></thead>
+<tbody>
+<tr><td><span class="kbd">→</span> <span class="kbd">↓</span> <span class="kbd">Space</span> <span class="kbd">N</span></td><td>Next slide</td></tr>
+<tr><td><span class="kbd">←</span> <span class="kbd">↑</span> <span class="kbd">P</span></td><td>Previous slide</td></tr>
+<tr><td><span class="kbd">Home</span> / <span class="kbd">End</span></td><td>First / last slide</td></tr>
+<tr><td><span class="kbd">B</span> / <span class="kbd">.</span></td><td>Blackout (pause screen)</td></tr>
+<tr><td><span class="kbd">F</span></td><td>Fullscreen</td></tr>
+<tr><td><span class="kbd">Esc</span> / <span class="kbd">O</span></td><td>Overview mode</td></tr>
+<tr><td><span class="kbd">S</span></td><td>Speaker notes window</td></tr>
+<tr><td><span class="kbd">?</span></td><td>Help overlay</td></tr>
+<tr><td><span class="kbd">Alt</span> + click</td><td>Zoom in on element</td></tr>
+<tr><td><span class="kbd">Enter</span> <span class="pill">app</span></td><td>SlideController step advance</td></tr>
+<tr><td><span class="kbd">R</span> <span class="pill">app</span></td><td>SlideController reset</td></tr>
+</tbody>
+</table>
+
+<p><strong>Custom binding from <code>deck.js</code>:</strong></p>
+<pre><code>Reveal.addKeyBinding(
+  { keyCode: 77, key: 'M', description: 'Show map' },
+  () =&gt; { /* action */ }
+);</code></pre>
+
+<hr />
+
+<h2>Events (for <code>deck.js</code>)</h2>
+<pre><code>Reveal.on('ready', (event) =&gt; { /* initial load */ });
+
+Reveal.on('slidechanged', (event) =&gt; {
+  event.currentSlide;   // &lt;section&gt; element
+  event.previousSlide;
+  event.indexh;         // horizontal index
+  event.indexv;         // vertical index
+});
+
+Reveal.on('fragmentshown',    (event) =&gt; event.fragment);
+Reveal.on('fragmenthidden',   (event) =&gt; event.fragment);
+Reveal.on('overviewshown',    () =&gt; {});
+Reveal.on('overviewhidden',   () =&gt; {});
+Reveal.on('paused',           () =&gt; {});
+Reveal.on('resumed',          () =&gt; {});
+Reveal.on('autoslidepaused',  () =&gt; {});
+Reveal.on('autoslideresumed', () =&gt; {});</code></pre>
+
+<h2>Runtime API (most-used)</h2>
+<pre><code>// Navigation
+Reveal.next(); Reveal.prev();
+Reveal.up(); Reveal.down(); Reveal.left(); Reveal.right();
+Reveal.slide(h, v, f);          // jump to specific slide
+
+// State queries
+Reveal.getCurrentSlide();        // &lt;section&gt;
+Reveal.getIndices();             // { h, v, f }
+Reveal.getSlidePastCount();
+Reveal.getTotalSlides();
+Reveal.getProgress();            // 0–1
+Reveal.isFirstSlide();
+Reveal.isLastSlide();
+Reveal.isPaused();
+Reveal.isOverview();
+Reveal.isAutoSliding();
+
+// UI
+Reveal.togglePause();
+Reveal.toggleOverview();
+
+// Reconfigure at runtime
+Reveal.configure({ transition: 'fade' });</code></pre>
+
+<hr class="page-break" />
+
+<h2>Common gotchas</h2>
+<ul>
+<li><strong><code>data-src</code> unloads when far from view</strong> (governed by <code>viewDistance</code>). For media that must keep state, use plain <code>src</code>.</li>
+<li><strong><code>data-autoplay</code> needs prior user interaction</strong> in most browsers. The first slide's autoplay often fails until the user has clicked or pressed a key.</li>
+<li><strong><code>data-preview-link</code> fails for same-origin-locked URLs</strong> — many sites send <code>X-Frame-Options: deny</code> and Chromium blocks the iframe.</li>
+<li><strong>Fragments reset on slide re-entry</strong> unless <code>fragmentInURL: true</code> is set and you deep-link.</li>
+<li><strong><code>data-state="foo"</code> adds classes to <code>&lt;body&gt;</code>, not the slide</strong> — use it to trigger global CSS/JS, not slide-scoped styling.</li>
+<li><strong>Nested iframes inherit sandbox</strong> — since decks run inside a sandboxed outer iframe, <code>data-background-iframe</code> content is further restricted.</li>
+</ul>
+
+<h2>What this app adds on top</h2>
+<table>
+<thead><tr><th>Feature</th><th>Where documented</th></tr></thead>
+<tbody>
+<tr><td><code>SlideController.registerSlide</code> / <code>registerReset</code> / <code>registerSlideInit</code></td><td>reveal/plugin/slide-controller/index.js</td></tr>
+<tr><td><code>&lt;!-- .slide: data-no-logo --&gt;</code> hides theme logo</td><td>README.md → Logo</td></tr>
+<tr><td><code>{current}</code> / <code>{total}</code> tokens in footer</td><td>README.md → Footer</td></tr>
+<tr><td>Front-matter scalar keys → <code>Reveal.initialize(...)</code></td><td>README.md</td></tr>
+<tr><td>Front-matter <code>scripts:</code> / <code>styles:</code> / <code>theme:</code></td><td>README.md</td></tr>
+<tr><td>User themes at <code>&lt;presentations&gt;/_themes/&lt;name&gt;/</code></td><td>README.md → Themes</td></tr>
+</tbody>
+</table>
+
+<p class="small" style="margin-top: 16pt; color: var(--muted);">Reveal.js is MIT-licensed. See <a href="https://revealjs.com/">revealjs.com</a> for canonical docs.</p>
+
+</body>
+</html>
