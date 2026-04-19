@@ -9,6 +9,7 @@ A universal [Reveal.js](https://revealjs.com/) presentation viewer built with El
 - [REVEAL-CHEATSHEET.md](REVEAL-CHEATSHEET.md) — every Reveal.js data attribute, class, and content flag. Printable HTML version: [REVEAL-CHEATSHEET.html](REVEAL-CHEATSHEET.html) (**File → Print → Save as PDF**).
 - [ARCHITECTURE.md](ARCHITECTURE.md) — process model, protocol handler, SlideController API, and security boundaries.
 - [CHANGELOG.md](CHANGELOG.md) — release notes.
+- [RELEASING.md](RELEASING.md) — maintainer guide for cutting signed releases.
 
 ## Architecture
 

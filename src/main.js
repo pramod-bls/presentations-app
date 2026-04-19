@@ -946,6 +946,39 @@ function registerIPC() {
   });
 }
 
+// ── Auto-update (packaged builds only) ──────────────────────
+// electron-updater checks the configured update feed on startup and
+// downloads updates in the background. Disabled in dev (`npm start`)
+// and in non-packaged builds so developer iteration isn't hijacked.
+
+async function initAutoUpdater() {
+  if (!app.isPackaged) return;
+  try {
+    const { autoUpdater } = await import('electron-updater');
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+    autoUpdater.on('update-downloaded', (info) => {
+      if (!mainWindow || mainWindow.isDestroyed()) return;
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        buttons: ['Restart Now', 'Later'],
+        defaultId: 0,
+        cancelId: 1,
+        message: `Update ${info.version} ready`,
+        detail: 'Restart the app to install the update.',
+      }).then((result) => {
+        if (result.response === 0) autoUpdater.quitAndInstall();
+      });
+    });
+    autoUpdater.on('error', (err) => {
+      console.warn('[autoUpdater]', err.message);
+    });
+    autoUpdater.checkForUpdates();
+  } catch (err) {
+    console.warn('[autoUpdater] init failed:', err.message);
+  }
+}
+
 // ── App lifecycle ───────────────────────────────────────────
 
 app.whenReady().then(() => {
@@ -953,6 +986,7 @@ app.whenReady().then(() => {
   registerIPC();
   buildMenu();
   createWindow();
+  initAutoUpdater();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
