@@ -1,0 +1,65 @@
+# Changelog
+
+All notable changes to this project go here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions use [Semantic Versioning](https://semver.org/).
+
+Bundled Reveal.js version is tracked alongside app versions below.
+
+## [Unreleased]
+
+Nothing yet.
+
+## [1.0.0] — 2026-04-19
+
+First usable release. The `package.json` version was set to `1.0.0` at project creation, but the features that make the app actually useful all landed together in this release.
+
+**Bundled Reveal.js:** 6.0.0.
+
+### Added
+
+- **Markdown decks.** Folders with a `deck.md` are auto-rendered — the main process generates the wrapper HTML in memory via a custom file protocol handler; no build step.
+- **Front-matter config.** YAML-ish block at the top of `deck.md` supports Reveal config (`transition`, `width`, `autoSlide`, …), theme tokens (`font`, `backgroundColor`, `accentColor`, …), logo/footer, and `scripts:` / `styles:` asset lists. All keys validated — bad values drop silently.
+- **Theme presets.** `theme: <name>` resolves in three sources, in order: user `<presentations>/_themes/<name>/`, app-bundled `reveal/themes/<name>/`, Reveal.js built-in `reveal/vendor/themes/<name>.css`. Ships 12 Reveal built-in themes (beige, black, blood, dracula, league, moon, night, serif, simple, sky, solarized, white) plus one custom preset `custom-sample`.
+- **File menu → Copy Built-in Theme to My Folder…** Clones a bundled theme into `_themes/` for user editing.
+- **File menu → Open User Themes Folder.** Opens `_themes/` in the OS file manager.
+- **Logo + footer chrome.** `logo` / `logoPosition` / `logoHeight` / `logoCustomPosition` put an image on every slide. `footer` accepts `false`, a string (right-side only), or `{ left, right }`. Tokens `{current}` / `{total}` interpolate to slide counters.
+- **Per-slide `<!-- .slide: data-no-logo -->`** hides the logo on specific slides.
+- **Sandboxed deck iframes.** Every deck runs in an `<iframe sandbox="allow-scripts">` overlay — deck JS can't reach the host window, `electronAPI`, or other decks. Null origin.
+- **Home screen** renders a grid of deck cards with **cached PNG thumbnails** captured via an offscreen `BrowserWindow`, invalidated by source-file mtime.
+- **Dual mode folder selection.** Pick a parent folder of decks *or* a single deck folder directly — the app detects which.
+- **SlideController plugin refactor.** Thin core (`registerSlide`, `registerReset`, `registerSlideInit`, `getSlideId`, Enter/R bindings) + optional d3-helpers extension (`show`, `hide`, `sel`, `loadSVG`, `animatePath*`, `animateImg`, `morphPaths`). Auto-hides tracked d3 selections on reset.
+- **Bundled vendor libraries.** `d3.min.js` and `anime.min.js` under `reveal/vendor/` for offline use via `scripts:`.
+- **User-side Reveal override.** Drop replacement files into `<presentations>/_reveal/` to override the bundled reveal.js on a per-file basis. Unsupported; documented as advanced.
+- **Samples.** `samples/starter-deck/` (fully commented scaffold with theme pre-wired) and `samples/legacy-original-deck/` (preserves original-deck animations + asset loaders).
+- **Reveal cheat sheet.** [REVEAL-CHEATSHEET.md](REVEAL-CHEATSHEET.md) plus a printable [HTML version](REVEAL-CHEATSHEET.html) with embedded print CSS.
+- **User guide.** Task-recipe format in [USER-GUIDE.md](USER-GUIDE.md).
+- **Front-matter reference.** Exhaustive key table in [FRONT-MATTER-REFERENCE.md](FRONT-MATTER-REFERENCE.md).
+- **Architecture doc.** Process model + Mermaid diagram in [ARCHITECTURE.md](ARCHITECTURE.md).
+- **Maintainer tool.** `npm run update-reveal [version]` downloads the `reveal.js` npm tarball and swaps core files, plugins, and built-in themes, preserving our custom plugin. Protects uncommitted work with a git-clean check.
+
+### Security
+
+- Path traversal blocked on `/reveal/*`, `/plugin/*`, and `/user-themes/*` via a `resolveWithinBase` helper.
+- `decodeURIComponent` wrapped in try/catch for malformed URLs (400 response).
+- Deck iframes have no `allow-same-origin` → null origin; cross-deck and host-reach attacks blocked by the sandbox.
+- Theme JSON sanitized through the same validator pipeline as front-matter — themes can't smuggle unknown keys.
+
+### Changed
+
+- Deck opening no longer navigates the main window; a full-window iframe overlay mounts on top of the grid and tears down on "⬅ Home".
+- Thumbnails on the home screen switched from eager live iframes to cached PNGs (dramatic memory reduction with many decks).
+- SlideController's `getSlideId()` now prefers the `<section>` id, falling back to the first child `<div>` id (fixes markdown-generated decks whose sections have ids directly).
+- Front-matter parser extended with block/inline YAML lists (`scripts:`, `styles:`) and block maps (`footer:`).
+- `slideNumber` auto-disabled when the chrome footer is rendering, unless explicitly set in front-matter.
+
+### Developer experience
+
+- Main-process auto-restart on source changes. Custom Vite plugin ([vite-hot-restart.mjs](vite-hot-restart.mjs)) works around [electron/forge#3380](https://github.com/electron/forge/issues/3380) by emitting `rs\n` into Forge's stdin after each rebuild.
+- Shared `DECK_WEB_PREFERENCES` constant unifies security settings across main window and thumbnail capture window.
+
+## [0.1.0] — 2026-03-17
+
+Initial scaffolding commits. Electron Forge + Vite setup, bundled Reveal.js 6.0.0, SlideController plugin, and a placeholder deck initializer. No deck rendering pipeline yet.
+
+[Unreleased]: https://github.com/YOUR_ORG/presentations-app/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/YOUR_ORG/presentations-app/releases/tag/v1.0.0
+[0.1.0]: https://github.com/YOUR_ORG/presentations-app/releases/tag/v0.1.0

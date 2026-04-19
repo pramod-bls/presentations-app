@@ -2,9 +2,13 @@
 
 A universal [Reveal.js](https://revealjs.com/) presentation viewer built with Electron. Point it at a folder of presentations and browse, open, and present them all from one place.
 
-> For a deeper look at the process model, protocol handler, SlideController API, and security boundaries, see [ARCHITECTURE.md](ARCHITECTURE.md).
->
-> For a full reference of Reveal.js data attributes, classes, and content flags, see [REVEAL-CHEATSHEET.md](REVEAL-CHEATSHEET.md) (GitHub-friendly) or open [REVEAL-CHEATSHEET.html](REVEAL-CHEATSHEET.html) in a browser for a printable handout (**File → Print → Save as PDF**).
+**Other docs:**
+
+- [USER-GUIDE.md](USER-GUIDE.md) — task-oriented "how do I…?" recipes for common needs.
+- [FRONT-MATTER-REFERENCE.md](FRONT-MATTER-REFERENCE.md) — exhaustive table of every `deck.md` front-matter key.
+- [REVEAL-CHEATSHEET.md](REVEAL-CHEATSHEET.md) — every Reveal.js data attribute, class, and content flag. Printable HTML version: [REVEAL-CHEATSHEET.html](REVEAL-CHEATSHEET.html) (**File → Print → Save as PDF**).
+- [ARCHITECTURE.md](ARCHITECTURE.md) — process model, protocol handler, SlideController API, and security boundaries.
+- [CHANGELOG.md](CHANGELOG.md) — release notes.
 
 ## Architecture
 
