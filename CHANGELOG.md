@@ -6,6 +6,10 @@ Bundled Reveal.js version is tracked alongside app versions below.
 
 ## [Unreleased]
 
+### Changed
+
+- **Deck default canvas.** `deck-init.js` now defaults to `width: 1920, height: 1080, margin: 0.04, minScale: 0.2, maxScale: 2.0` instead of `width/height: '100%', margin: 0, minScale/maxScale: 1`. The previous defaults ran content edge-to-edge which read as uneven horizontal spacing (left-aligned text touching the screen edge, no right margin). New defaults match Reveal's own upstream values. Decks that relied on edge-to-edge rendering can restore it with `margin: 0` in front-matter.
+
 ### Added
 
 - **`TEMPLATE` theme** as an authoring starting point under `reveal/themes/TEMPLATE/`. Exhaustively commented `theme.css`, every-key `theme.json`, placeholder logo, plus a README walking through the workflow. Surfaces via **File → Copy Built-in Theme to My Folder…** alongside `custom-sample`.

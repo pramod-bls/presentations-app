@@ -19,12 +19,19 @@
 var DeckInit = (function () {
     'use strict';
 
+    // Default canvas dimensions and margin. Authors override these via
+    // front-matter (width / height / margin) on a per-deck basis.
+    //
+    // Margin 0.04 = 4% of the viewport is reserved as empty space around
+    // the slide canvas. This is Reveal's own default and prevents content
+    // from running edge-to-edge. Authors who want the canvas to fill the
+    // viewport can set `margin: 0` explicitly in front-matter.
     var defaults = {
-        width: '100%',
-        height: '100%',
-        margin: 0,
-        minScale: 1,
-        maxScale: 1,
+        width: 1920,
+        height: 1080,
+        margin: 0.04,
+        minScale: 0.2,
+        maxScale: 2.0,
         controls: true,
         progress: true,
         history: true,
