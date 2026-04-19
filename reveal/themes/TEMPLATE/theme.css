@@ -72,6 +72,15 @@
  .reveal-viewport {
    padding: 2%;
  }
+
+ * Reveal's default CSS left-indents lists and blockquotes asymmetrically.
+ * If slide content looks shifted right, flatten them: *
+ .reveal ul, .reveal ol {
+   margin-left: 0;
+ }
+ .reveal blockquote, .reveal dd {
+   margin-left: 0;
+ }
 */
 
 /* ─── Heading tweaks ────────────────────────────────────────

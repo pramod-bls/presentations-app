@@ -90,6 +90,15 @@ font: "/reveal/vendor/my-brand-font.css"
 ---
 ```
 
+### My slide padding looks uneven — more space on the left than the right.
+
+Reveal's default stylesheet applies **left-only** margins to `<ul>`, `<ol>`, `<blockquote>`, and `<dd>` as intentional indentation. If your slide is mostly bullet points, the content ends up shifted right and looks asymmetric. Neutralize them in your theme's `theme.css` or the deck's `deck.css`:
+
+```css
+.reveal ul, .reveal ol { margin-left: 0; }
+.reveal blockquote, .reveal dd { margin-left: 0; }
+```
+
 ### …adjust padding around the slide content?
 
 Reveal doesn't expose spacing as `--r-*` custom properties, so you set it with real CSS selectors in your theme's `theme.css` or the deck's `deck.css`:
