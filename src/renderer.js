@@ -62,13 +62,18 @@ function showFolderBar(folderPath) {
  * iframe. `allow-scripts` without `allow-same-origin` is the core of the
  * untrusted-deck isolation model (see ARCHITECTURE.md → Security).
  *
- * Click the "⬅ Home" button to remove the overlay and return to the grid.
+ * While the viewer is open, the main process watches the deck folder and
+ * fires a `deck-changed` event on any file change; the iframe is then
+ * reloaded with a cache-busting query so the protocol handler re-reads
+ * from disk. Closing the viewer tears down the watcher.
  *
  * @param {string} deckPath `file://` URL to the deck's (possibly generated)
  *   index.html.
  * @param {string} deckName Display name — set on the iframe `title` for a11y.
+ * @param {string} [deckFolder] Absolute path to the deck folder; enables
+ *   live reload when provided.
  */
-function openDeckViewer(deckPath, deckName) {
+function openDeckViewer(deckPath, deckName, deckFolder) {
   const existing = document.getElementById('deck-viewer');
   if (existing) existing.remove();
 
@@ -83,13 +88,48 @@ function openDeckViewer(deckPath, deckName) {
   iframe.setAttribute('allowfullscreen', '');
   iframe.addEventListener('load', () => iframe.focus());
 
+  // Flash indicator during live reload
+  const reloadIndicator = document.createElement('div');
+  reloadIndicator.className = 'deck-reload-indicator';
+  reloadIndicator.textContent = 'Reloaded';
+
+  // Live-reload wiring. Debounced via the main process; we also pace
+  // consecutive reloads here so a burst of file changes can't pin the
+  // iframe in a permanent load loop.
+  let unsubscribe = null;
+  let lastReload = 0;
+  const MIN_RELOAD_GAP_MS = 300;
+  if (deckFolder && window.electronAPI.watchDeck) {
+    window.electronAPI.watchDeck(deckFolder);
+    unsubscribe = window.electronAPI.onDeckChanged(() => {
+      const now = Date.now();
+      if (now - lastReload < MIN_RELOAD_GAP_MS) return;
+      lastReload = now;
+      // Cache-bust the URL so the protocol handler re-renders from disk.
+      // The deck iframe is sandboxed (null origin) so we can't read the
+      // inner location.hash directly; rely on Reveal's `hash: true` +
+      // URL-based deep link behavior and just preserve whatever hash
+      // was on the src the last time we set it.
+      const url = new URL(iframe.src);
+      url.searchParams.set('_r', String(now));
+      iframe.src = url.toString();
+      reloadIndicator.classList.add('visible');
+      setTimeout(() => reloadIndicator.classList.remove('visible'), 800);
+    });
+  }
+
   const homeBtn = document.createElement('button');
   homeBtn.className = 'deck-viewer-home';
   homeBtn.textContent = '⬅ Home';
-  homeBtn.addEventListener('click', () => viewer.remove());
+  homeBtn.addEventListener('click', () => {
+    if (unsubscribe) unsubscribe();
+    if (window.electronAPI.unwatchDeck) window.electronAPI.unwatchDeck();
+    viewer.remove();
+  });
 
   viewer.appendChild(iframe);
   viewer.appendChild(homeBtn);
+  viewer.appendChild(reloadIndicator);
   document.body.appendChild(viewer);
   iframe.focus();
 }
@@ -138,7 +178,7 @@ function renderDecks(decks) {
   decks.forEach((deck) => {
     const card = document.createElement('div');
     card.className = 'card';
-    card.addEventListener('click', () => openDeckViewer(deck.path, deck.name));
+    card.addEventListener('click', () => openDeckViewer(deck.path, deck.name, deck.folder));
 
     const thumb = document.createElement('div');
     thumb.className = 'thumbnail';

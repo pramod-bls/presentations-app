@@ -847,6 +847,56 @@ function registerIPC() {
     await thumbnailJobs.get(deckFolder);
     return { path: fs.existsSync(cachePath) ? cachePath : null };
   });
+
+  // ── Deck file watcher (live reload) ────────────────────────
+  // Only one watcher is active at a time — the one tracking whatever
+  // deck is currently open in the viewer. Switching decks calls
+  // watch-deck again which tears down the old watcher first.
+
+  /** @type {fs.FSWatcher | null} */
+  let activeWatcher = null;
+  /** @type {NodeJS.Timeout | null} */
+  let debounceTimer = null;
+  const DEBOUNCE_MS = 200;
+
+  function teardownWatcher() {
+    if (activeWatcher) {
+      try { activeWatcher.close(); } catch { /* already closed */ }
+      activeWatcher = null;
+    }
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
+  }
+
+  function notifyDeckChanged() {
+    // Skip if the main window is gone (closed / being destroyed).
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    mainWindow.webContents.send('deck-changed');
+  }
+
+  ipcMain.handle('watch-deck', (_event, deckFolder) => {
+    teardownWatcher();
+    if (!deckFolder || !fs.existsSync(deckFolder) || !fs.statSync(deckFolder).isDirectory()) return;
+    try {
+      activeWatcher = fs.watch(deckFolder, { recursive: true }, (_eventType, filename) => {
+        // Ignore editor swap / partial-write files.
+        if (filename && /(\.swp|\.swx|~$|\.tmp$|\.lock$)/.test(filename)) return;
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          debounceTimer = null;
+          notifyDeckChanged();
+        }, DEBOUNCE_MS);
+      });
+    } catch (err) {
+      console.warn('[watch-deck] failed for', deckFolder, err.message);
+    }
+  });
+
+  ipcMain.handle('unwatch-deck', () => {
+    teardownWatcher();
+  });
 }
 
 // ── App lifecycle ───────────────────────────────────────────

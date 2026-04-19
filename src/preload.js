@@ -18,6 +18,9 @@ const { contextBridge, ipcRenderer } = require('electron');
  * @property {() => Promise<{ presentationsFolder: string|null }>} getConfig
  * @property {() => Promise<string|null>} openFolder
  * @property {(deckFolder: string) => Promise<{ path: string|null }>} getThumbnail
+ * @property {(deckFolder: string) => Promise<void>} watchDeck
+ * @property {() => Promise<void>} unwatchDeck
+ * @property {(listener: () => void) => () => void} onDeckChanged — returns unsubscribe
  */
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -25,4 +28,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getConfig: () => ipcRenderer.invoke('get-config'),
   openFolder: () => ipcRenderer.invoke('open-folder'),
   getThumbnail: (deckFolder) => ipcRenderer.invoke('get-thumbnail', deckFolder),
+  watchDeck: (deckFolder) => ipcRenderer.invoke('watch-deck', deckFolder),
+  unwatchDeck: () => ipcRenderer.invoke('unwatch-deck'),
+  onDeckChanged: (listener) => {
+    const handler = () => listener();
+    ipcRenderer.on('deck-changed', handler);
+    return () => ipcRenderer.removeListener('deck-changed', handler);
+  },
 });

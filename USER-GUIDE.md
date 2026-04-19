@@ -330,6 +330,14 @@ Drop the replacement files into `<presentations>/_reveal/`:
 
 Unsupported — see the "Advanced: user-side Reveal override" section in the README.
 
+### …see my changes to a deck without closing and reopening?
+
+**Already automatic.** While a deck is open in the viewer, the app watches its folder for changes. Save `deck.md`, `deck.js`, `deck.css`, or anything under `assets/`, and the deck reloads within ~200ms — you'll see a small "Reloaded" flash in the top-right.
+
+Caveats:
+- The deck restarts from slide 1 after reload (sandbox can't read the inner hash).
+- Bursts of saves are debounced — you won't see ten reloads if your editor flushes in chunks.
+
 ### …make a deck run without the app (standalone HTML)?
 
 Currently not directly — the app generates the HTML at request time using its protocol handler to serve `/reveal/...` paths. To export a standalone deck:

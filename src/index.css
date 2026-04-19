@@ -150,6 +150,30 @@ h1 {
   opacity: 1;
 }
 
+.deck-reload-indicator {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 10000;
+  background: rgba(66, 175, 250, 0.9);
+  color: #000;
+  font-family: system-ui;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 4px 10px;
+  border-radius: 4px;
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.deck-reload-indicator.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .card-title {
   padding: 14px 18px;
   font-size: 1.1em;
