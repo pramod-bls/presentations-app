@@ -57,6 +57,28 @@ function setPresentationsFolder(folderPath) {
   invalidateUserThemeCache();
 }
 
+/**
+ * Whether the user has marked the active presentations folder as trusted.
+ * Trusted folders get a relaxed sandbox that allows Reveal's built-in
+ * popups (speaker-notes window, link previews). Untrusted folders use
+ * the strict "allow-scripts only" sandbox.
+ */
+function isTrustedFolder() {
+  const cfg = loadConfig();
+  if (!cfg.presentationsFolder) return false;
+  const trusted = Array.isArray(cfg.trustedFolders) ? cfg.trustedFolders : [];
+  return trusted.includes(cfg.presentationsFolder);
+}
+
+function setFolderTrusted(folderPath, trusted) {
+  const config = loadConfig();
+  const list = new Set(Array.isArray(config.trustedFolders) ? config.trustedFolders : []);
+  if (trusted) list.add(folderPath);
+  else list.delete(folderPath);
+  config.trustedFolders = [...list];
+  saveConfig(config);
+}
+
 // ── Window ──────────────────────────────────────────────────
 
 // Shared webPreferences for any window that loads deck content. We keep
@@ -112,6 +134,21 @@ function buildMenu() {
           label: 'Open Presentations Folder...',
           accelerator: 'CmdOrCtrl+O',
           click: () => openFolderDialog(),
+        },
+        {
+          label: 'Trust This Folder (Enable Presenter Mode)',
+          type: 'checkbox',
+          checked: isTrustedFolder(),
+          click: (menuItem) => {
+            const folder = getPresentationsFolder();
+            if (!folder) {
+              menuItem.checked = false;
+              return;
+            }
+            setFolderTrusted(folder, menuItem.checked);
+            // Reload the home screen so subsequent deck opens pick up the new trust level.
+            goHome();
+          },
         },
         { type: 'separator' },
         {
@@ -816,9 +853,19 @@ function registerIPC() {
     return decks;
   });
 
-  // Returns persisted config — currently just the active folder.
+  // Returns persisted config — active folder + whether it's trusted.
   ipcMain.handle('get-config', () => {
-    return { presentationsFolder: getPresentationsFolder() };
+    return {
+      presentationsFolder: getPresentationsFolder(),
+      trustedFolder: isTrustedFolder(),
+    };
+  });
+
+  ipcMain.handle('set-folder-trusted', (_event, trusted) => {
+    const folder = getPresentationsFolder();
+    if (!folder) return false;
+    setFolderTrusted(folder, !!trusted);
+    return isTrustedFolder();
   });
 
   // Show the native folder picker. Resolves to the chosen path or null.

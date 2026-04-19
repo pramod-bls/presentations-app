@@ -40,12 +40,16 @@ function showWelcome() {
  * Render the "currently viewing: /path" bar with a Change button.
  * Called before renderDecks when a folder is configured.
  */
-function showFolderBar(folderPath) {
+function showFolderBar(folderPath, trusted) {
   document.querySelectorAll('.folder-bar').forEach((el) => el.remove());
+
+  const trustBadge = trusted
+    ? '<span class="trust-badge" title="Presenter mode enabled (trusted folder)">trusted</span>'
+    : '';
 
   const bar = document.createElement('div');
   bar.className = 'folder-bar';
-  bar.innerHTML = '<span class="path">' + folderPath + '</span>' +
+  bar.innerHTML = '<span class="path">' + folderPath + '</span>' + trustBadge +
     '<button id="change-btn">Change</button>';
   const h1 = document.querySelector('h1');
   h1.parentNode.insertBefore(bar, h1.nextSibling);
@@ -59,21 +63,23 @@ function showFolderBar(folderPath) {
 
 /**
  * Mount a fullscreen viewer overlay containing the deck inside a sandboxed
- * iframe. `allow-scripts` without `allow-same-origin` is the core of the
- * untrusted-deck isolation model (see ARCHITECTURE.md → Security).
+ * iframe. The sandbox policy depends on whether the active presentations
+ * folder is marked "trusted":
  *
- * While the viewer is open, the main process watches the deck folder and
- * fires a `deck-changed` event on any file change; the iframe is then
- * reloaded with a cache-busting query so the protocol handler re-reads
- * from disk. Closing the viewer tears down the watcher.
+ *   - **Untrusted** (default): `sandbox="allow-scripts"` — null origin,
+ *     no popups, no parent access. Safe for decks you didn't author.
+ *   - **Trusted**: `sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"`
+ *     — lets Reveal open its speaker-notes window (press S) and allows
+ *     `data-preview-link` overlays. Still null origin; no parent access.
  *
- * @param {string} deckPath `file://` URL to the deck's (possibly generated)
- *   index.html.
+ * Toggle trust via **File → Trust This Folder**.
+ *
+ * @param {string} deckPath `file://` URL to the deck's index.html.
  * @param {string} deckName Display name — set on the iframe `title` for a11y.
- * @param {string} [deckFolder] Absolute path to the deck folder; enables
- *   live reload when provided.
+ * @param {string} [deckFolder] Absolute path to the deck folder; enables live reload.
+ * @param {boolean} [trusted] Whether the presentations folder is trusted.
  */
-function openDeckViewer(deckPath, deckName, deckFolder) {
+function openDeckViewer(deckPath, deckName, deckFolder, trusted) {
   const existing = document.getElementById('deck-viewer');
   if (existing) existing.remove();
 
@@ -83,7 +89,10 @@ function openDeckViewer(deckPath, deckName, deckFolder) {
 
   const iframe = document.createElement('iframe');
   iframe.src = deckPath;
-  iframe.setAttribute('sandbox', 'allow-scripts');
+  const sandboxFlags = trusted
+    ? 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
+    : 'allow-scripts';
+  iframe.setAttribute('sandbox', sandboxFlags);
   iframe.setAttribute('title', deckName);
   iframe.setAttribute('allowfullscreen', '');
   iframe.addEventListener('load', () => iframe.focus());
@@ -161,8 +170,9 @@ async function loadThumbnail(thumb, deckFolder) {
  * async thumbnail loads for each card.
  *
  * @param {Array<{ name: string, path: string, folder: string }>} decks
+ * @param {boolean} trusted Whether the active folder is marked trusted.
  */
-function renderDecks(decks) {
+function renderDecks(decks, trusted) {
   const content = document.getElementById('content');
   if (decks.length === 0) {
     content.innerHTML =
@@ -178,7 +188,7 @@ function renderDecks(decks) {
   decks.forEach((deck) => {
     const card = document.createElement('div');
     card.className = 'card';
-    card.addEventListener('click', () => openDeckViewer(deck.path, deck.name, deck.folder));
+    card.addEventListener('click', () => openDeckViewer(deck.path, deck.name, deck.folder, trusted));
 
     const thumb = document.createElement('div');
     thumb.className = 'thumbnail';
@@ -218,10 +228,10 @@ async function loadDecks() {
       return;
     }
 
-    showFolderBar(config.presentationsFolder);
+    showFolderBar(config.presentationsFolder, !!config.trustedFolder);
 
     const decks = await window.electronAPI.getDecks();
-    renderDecks(decks);
+    renderDecks(decks, !!config.trustedFolder);
   } catch (err) {
     content.innerHTML =
       '<div class="loading error">Failed to load presentations: ' + err.message + '</div>';

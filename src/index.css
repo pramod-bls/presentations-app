@@ -29,6 +29,20 @@ h1 {
   font-family: monospace;
 }
 
+.folder-bar .trust-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: rgba(66, 175, 250, 0.15);
+  color: #42affa;
+  border: 1px solid rgba(66, 175, 250, 0.4);
+  font-size: 0.75em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .folder-bar button {
   background: transparent;
   border: 1px solid #42affa;

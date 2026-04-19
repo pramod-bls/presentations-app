@@ -283,6 +283,20 @@ Reveal.on('fragmentshown', (event) => {
 
 Full event list in [REVEAL-CHEATSHEET.md](REVEAL-CHEATSHEET.md).
 
+### …use Reveal's speaker notes view?
+
+Speaker view opens a separate window showing the current slide, next slide, speaker notes, and a timer. Press **S** on the deck.
+
+By default the app runs decks in a strict sandbox that blocks Reveal's popup, so you'll need to enable presenter mode first:
+
+1. **File → Trust This Folder (Enable Presenter Mode)** — toggle it on.
+2. A "trusted" badge appears in the folder bar.
+3. Open any deck, press **S**.
+
+What trust grants: the deck iframe can open popups (speaker window, `data-preview-link` overlays). What stays blocked even in trusted mode: host window access, `electronAPI`, cross-deck communication (all enforced by null origin).
+
+Only mark folders trusted when you authored the decks (or trust whoever did). Toggle off again to return to strict sandbox.
+
 ### …add a custom keyboard shortcut?
 
 ```js

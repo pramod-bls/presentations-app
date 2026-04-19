@@ -98,6 +98,11 @@ Every deck runs in an iframe with `sandbox="allow-scripts"` and no
 `allow-same-origin`. This is the core of the untrusted-deck security
 model — see the Security section below.
 
+When the active folder is marked **trusted** (File → Trust This Folder),
+the sandbox also receives `allow-popups` and `allow-popups-to-escape-sandbox`
+so Reveal's built-in speaker-notes window works. Null origin is preserved;
+the parent-window / `electronAPI` barriers stay intact.
+
 Inside the iframe, the generated HTML loads:
 
 1. Reveal.js core + plugins (markdown, highlight, notes, zoom, search)
@@ -111,9 +116,13 @@ Inside the iframe, the generated HTML loads:
 | Channel | Payload | Response | Purpose |
 |---------|---------|----------|---------|
 | `get-decks` | — | `Array<Deck>` | List decks in the active folder. If the folder itself contains `deck.md`/`index.html`, returns just that one deck. |
-| `get-config` | — | `{ presentationsFolder: string\|null }` | Return persisted config. |
+| `get-config` | — | `{ presentationsFolder, trustedFolder }` | Return persisted config incl. whether the active folder is trusted. |
 | `open-folder` | — | `string \| null` | Show native folder picker, persist choice, return path (or null if cancelled). |
+| `set-folder-trusted` | `boolean` | `boolean` | Toggle trust for the active folder; returns the new trust state. |
 | `get-thumbnail` | `deckFolder: string` | `{ path: string\|null }` | Cached PNG path for a deck, capturing it first if stale. |
+| `watch-deck` | `deckFolder: string` | `void` | Start watching a deck folder; fires `deck-changed` events on change (debounced 200ms). |
+| `unwatch-deck` | — | `void` | Stop the active watcher. Called when the viewer closes. |
+| `deck-changed` | *(main → renderer event)* | — | Fires when a watched deck's files change. Renderer cache-busts the iframe src. |
 
 `Deck` shape: `{ name: string, path: file://…/index.html, folder: string, source: 'html'|'markdown' }`.
 

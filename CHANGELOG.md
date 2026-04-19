@@ -9,6 +9,7 @@ Bundled Reveal.js version is tracked alongside app versions below.
 ### Added
 
 - **Deck live reload.** While a deck is open in the viewer, the main process watches the deck folder; edits to `deck.md`, `deck.js`, `deck.css`, or anything under `assets/` trigger an automatic reload (debounced 200ms, paced at least 300ms apart). A small "Reloaded" flash appears in the top-right on each reload. Watcher tears down automatically when you return to the home grid.
+- **Presenter mode (trusted folders).** New **File → Trust This Folder (Enable Presenter Mode)** menu toggle. Trusted folders relax the deck sandbox with `allow-popups` + `allow-popups-to-escape-sandbox` so Reveal's built-in speaker view (press **S**) and `data-preview-link` overlays work. Trust is persisted per folder path in config. Folder bar shows a "trusted" badge when active. Null origin stays in force — parent-window and `electronAPI` access remain blocked even in trusted mode.
 
 ## [1.0.0] — 2026-04-19
 
