@@ -352,6 +352,14 @@ Caveats:
 - The deck restarts from slide 1 after reload (sandbox can't read the inner hash).
 - Bursts of saves are debounced — you won't see ten reloads if your editor flushes in chunks.
 
+### …export a deck as a PDF?
+
+Open the deck, then **File → Export Current Deck as PDF…** (<kbd>Cmd/Ctrl</kbd> + <kbd>E</kbd>). Save location is up to you; the app opens the PDF when it's ready.
+
+Under the hood: the deck renders in a hidden window with Reveal's `?print-pdf` mode, which unfolds all slides. Each slide becomes one PDF page sized to match the deck's canvas (`width` / `height` from front-matter, defaults to 1920×1080).
+
+Set `pdfSeparateFragments: true` in front-matter (default) to get one page per fragment reveal, or `false` to collapse fragments onto a single page per slide.
+
 ### …make a deck run without the app (standalone HTML)?
 
 Currently not directly — the app generates the HTML at request time using its protocol handler to serve `/reveal/...` paths. To export a standalone deck:

@@ -152,6 +152,28 @@ function buildMenu() {
         },
         { type: 'separator' },
         {
+          label: 'Export Current Deck as PDF…',
+          accelerator: 'CmdOrCtrl+E',
+          click: async () => {
+            const folder = getActiveDeckFolder();
+            if (!folder) {
+              await dialog.showMessageBox(mainWindow, {
+                type: 'info',
+                message: 'No deck is open',
+                detail: 'Open a deck first, then choose Export.',
+              });
+              return;
+            }
+            try {
+              const out = await exportDeckPdf(folder);
+              if (out) shell.openPath(out);
+            } catch (err) {
+              await dialog.showErrorBox('PDF export failed', String(err));
+            }
+          },
+        },
+        { type: 'separator' },
+        {
           label: 'Open User Themes Folder',
           click: () => openUserThemesFolder(),
         },
@@ -759,6 +781,79 @@ async function waitForRevealReady(webContents, timeoutMs = 3000) {
  * @param {string} deckFolder Absolute path to the deck's folder.
  * @returns {Promise<string>} Path to the written PNG.
  */
+/**
+ * Export the deck at `deckFolder` as a PDF via Reveal's built-in
+ * print-pdf mode. Shows a save dialog, spins up a hidden BrowserWindow
+ * at the deck's canvas dimensions, loads the deck with `?print-pdf`,
+ * waits for Reveal to be ready, and calls webContents.printToPDF.
+ *
+ * The output preserves each slide as a single page. Fragments come out
+ * on separate pages when the deck has `pdfSeparateFragments: true`
+ * (default) in its front-matter.
+ *
+ * @param {string} deckFolder Absolute path to the deck folder.
+ * @returns {Promise<string|null>} Path to the saved PDF, or null if cancelled/failed.
+ */
+async function exportDeckPdf(deckFolder) {
+  if (!deckFolder) return null;
+
+  // Suggest a filename based on the folder name.
+  const defaultName = path.basename(deckFolder) + '.pdf';
+  const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+    title: 'Export deck as PDF',
+    defaultPath: defaultName,
+    filters: [{ name: 'PDF', extensions: ['pdf'] }],
+  });
+  if (canceled || !filePath) return null;
+
+  // Parse deck front-matter to determine canvas dimensions.
+  let width = 1920;
+  let height = 1080;
+  const deckMd = path.join(deckFolder, 'deck.md');
+  if (fs.existsSync(deckMd)) {
+    try {
+      const { frontMatter } = parseFrontMatter(fs.readFileSync(deckMd, 'utf-8'));
+      if (typeof frontMatter.width === 'number') width = frontMatter.width;
+      if (typeof frontMatter.height === 'number') height = frontMatter.height;
+    } catch { /* ignore, use defaults */ }
+  }
+
+  const indexUrl = 'file://' + path.join(deckFolder, 'index.html') + '?print-pdf';
+  const win = new BrowserWindow({
+    width, height,
+    show: false,
+    webPreferences: DECK_WEB_PREFERENCES,
+  });
+
+  try {
+    await win.loadURL(indexUrl);
+    await waitForRevealReady(win.webContents, 10000);
+    // Give Reveal a beat to lay out the print-pdf mode — in this mode it
+    // reflows all slides into a single scroll column, which is slower
+    // than normal rendering.
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    // Use the deck's declared canvas as the page size (convert pixels →
+    // microns: 1px @ 96dpi = 264.5833 microns). Reveal's print-pdf CSS
+    // uses @page with slide dimensions, so matching the page size keeps
+    // each slide on one page without scaling artifacts.
+    const PX_TO_MICRONS = 264.5833;
+    const pdfBuffer = await win.webContents.printToPDF({
+      printBackground: true,
+      landscape: width > height,
+      pageSize: {
+        width: Math.round(width * PX_TO_MICRONS),
+        height: Math.round(height * PX_TO_MICRONS),
+      },
+      margins: { marginType: 'none' },
+    });
+    fs.writeFileSync(filePath, pdfBuffer);
+    return filePath;
+  } finally {
+    win.destroy();
+  }
+}
+
 async function captureDeckThumbnail(deckFolder) {
   const indexUrl = 'file://' + path.join(deckFolder, 'index.html');
   const win = new BrowserWindow({
@@ -898,7 +993,12 @@ function registerIPC() {
   // ── Deck file watcher (live reload) ────────────────────────
   // Only one watcher is active at a time — the one tracking whatever
   // deck is currently open in the viewer. Switching decks calls
-  // watch-deck again which tears down the old watcher first.
+  // watch-deck again which tears down the old watcher first. We also
+  // track the active deck folder here so menu actions (PDF export,
+  // standalone export) can target it without needing renderer state.
+
+  /** @type {string | null} */
+  let activeDeckFolder = null;
 
   /** @type {fs.FSWatcher | null} */
   let activeWatcher = null;
@@ -925,7 +1025,9 @@ function registerIPC() {
 
   ipcMain.handle('watch-deck', (_event, deckFolder) => {
     teardownWatcher();
+    activeDeckFolder = null;
     if (!deckFolder || !fs.existsSync(deckFolder) || !fs.statSync(deckFolder).isDirectory()) return;
+    activeDeckFolder = deckFolder;
     try {
       activeWatcher = fs.watch(deckFolder, { recursive: true }, (_eventType, filename) => {
         // Ignore editor swap / partial-write files.
@@ -943,8 +1045,19 @@ function registerIPC() {
 
   ipcMain.handle('unwatch-deck', () => {
     teardownWatcher();
+    activeDeckFolder = null;
   });
+
+  // Expose the active deck folder for menu actions.
+  getActiveDeckFolder = () => activeDeckFolder;
 }
+
+/**
+ * Set inside `registerIPC` so menu actions (which live outside that
+ * closure) can ask for the currently-open deck folder.
+ * @type {() => (string | null)}
+ */
+let getActiveDeckFolder = () => null;
 
 // ── Auto-update (packaged builds only) ──────────────────────
 // electron-updater checks the configured update feed on startup and
