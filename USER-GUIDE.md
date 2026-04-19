@@ -45,7 +45,10 @@ theme: black     # any Reveal.js built-in: beige, black, blood, dracula,
 
 ### …create my own theme?
 
-Menu: **File → Copy Built-in Theme to My Folder…**, pick **`TEMPLATE`** — that's the authoring starting point with commented hints for every common tweak.
+Menu: **File → Copy Built-in Theme to My Folder…** — this now offers two categories:
+
+- **Preset** — the app's curated starting points (`TEMPLATE`, `custom-sample`). Pick **`TEMPLATE`** for a blank slate, **`custom-sample`** for a pre-populated reference.
+- **Reveal.js built-in** — the 12 upstream Reveal themes (black, beige, dracula, …), **generated from their unminified Sass source** into an editable `theme.css` of `--r-*` CSS custom-property overrides. Pick whichever matches the look you want and tweak from there.
 
 The app copies it to `<presentations-folder>/_themes/TEMPLATE/` and opens the folder. Rename the folder to your brand name (e.g. `my-brand`), edit `theme.json`, swap `logo.svg` for your own, and uncomment sections of `theme.css` as you need them.
 

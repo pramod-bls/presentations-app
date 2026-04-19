@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import started from 'electron-squirrel-startup';
 import { parseFrontMatter } from './front-matter.js';
 import { renderDeckHtml } from './deck-template.js';
+import { parseScssTheme, renderThemeCss } from './scss-to-css.js';
 
 if (started) app.quit();
 
@@ -423,13 +424,27 @@ function invalidateUserThemeCache() {
   }
 }
 
-/** List the names of bundled themes (folders under reveal/themes/). */
+/** List the names of bundled preset themes (folders under reveal/themes/). */
 function listBundledThemes() {
   const dir = path.join(app.getAppPath(), 'reveal', 'themes');
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir, { withFileTypes: true })
     .filter((e) => e.isDirectory() && !e.name.startsWith('.'))
     .map((e) => e.name);
+}
+
+/**
+ * List the Reveal.js built-in theme names (based on *.scss files in
+ * reveal/vendor/themes/src/). We generate a theme folder from these
+ * on demand via parseScssTheme/renderThemeCss.
+ */
+function listRevealThemes() {
+  const dir = path.join(app.getAppPath(), 'reveal', 'vendor', 'themes', 'src');
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir, { withFileTypes: true })
+    .filter((e) => e.isFile() && e.name.endsWith('.scss'))
+    .map((e) => e.name.replace(/\.scss$/, ''))
+    .sort();
 }
 
 /** Recursively copy `src` into `dst`, creating dirs as needed. */
@@ -444,9 +459,73 @@ function copyDirectory(src, dst) {
 }
 
 /**
- * Prompt the user to pick a bundled theme, then copy it into
+ * Generate a user-theme folder (`theme.json` + `theme.css`) from a
+ * Reveal.js built-in theme's Sass source. Produces a clean, human-
+ * readable CSS file of `--r-*` custom property overrides — not
+ * minified, freely editable.
+ *
+ * @param {string} themeName One of listRevealThemes() entries.
+ * @param {string} dst Destination folder (created if missing).
+ */
+function generateThemeFromReveal(themeName, dst) {
+  const scssPath = path.join(app.getAppPath(), 'reveal', 'vendor', 'themes', 'src', `${themeName}.scss`);
+  if (!fs.existsSync(scssPath)) {
+    throw new Error(`Reveal theme ${themeName} not found in vendor sources`);
+  }
+  fs.mkdirSync(dst, { recursive: true });
+
+  const scssSource = fs.readFileSync(scssPath, 'utf-8');
+  const parsed = parseScssTheme(scssSource);
+  const css = renderThemeCss(themeName, parsed);
+  fs.writeFileSync(path.join(dst, 'theme.css'), css);
+
+  // Minimal theme.json — just enough to activate the theme via
+  // `theme: <name>` in a deck, without fighting the CSS. Users can
+  // add colors/fonts/logo/footer keys later.
+  const themeJson = {
+    footer: { right: '{current}/{total}' },
+  };
+  fs.writeFileSync(
+    path.join(dst, 'theme.json'),
+    JSON.stringify(themeJson, null, 2) + '\n'
+  );
+
+  // Write a short README explaining the seed.
+  const readme = `# ${themeName}
+
+Generated from the Reveal.js built-in \`${themeName}\` theme.
+
+Everything in \`theme.css\` is a CSS custom property override — edit the
+values to match your brand. Anything you remove falls back to Reveal's
+defaults (see \`reveal/vendor/themes/src/template/settings.scss\` in the
+app for the full list).
+
+Add a logo, footer tweaks, fonts etc. to \`theme.json\` as you would for
+any custom theme — see [FRONT-MATTER-REFERENCE.md](../../../FRONT-MATTER-REFERENCE.md).
+
+Activate in a deck:
+
+\`\`\`yaml
+---
+theme: ${path.basename(dst)}
+---
+\`\`\`
+`;
+  fs.writeFileSync(path.join(dst, 'README.md'), readme);
+}
+
+/**
+ * Prompt the user to pick a built-in theme, then copy (for presets) or
+ * generate (for Reveal built-ins) a user-editable copy under
  * `<presentationsFolder>/_themes/<name>/`. Existing folders prompt for
- * overwrite confirmation. Opens the copy in Finder/Explorer on success.
+ * overwrite confirmation. Opens the result in Finder/Explorer on success.
+ *
+ * Two categories are offered:
+ *   1. **Preset themes** (reveal/themes/*) — custom presets that ship with
+ *      the app (TEMPLATE, custom-sample). Copied verbatim.
+ *   2. **Reveal.js built-in themes** (reveal/vendor/themes/src/*.scss) —
+ *      generated on the fly from the unminified Sass source into a clean
+ *      `theme.css` of --r-* custom-property overrides.
  */
 async function cloneBundledTheme() {
   const presentationsFolder = getPresentationsFolder();
@@ -459,8 +538,10 @@ async function cloneBundledTheme() {
     return;
   }
 
-  const themes = listBundledThemes();
-  if (themes.length === 0) {
+  const presets = listBundledThemes();           // TEMPLATE, custom-sample, …
+  const revealThemes = listRevealThemes();       // beige, black, dracula, …
+
+  if (presets.length === 0 && revealThemes.length === 0) {
     await dialog.showMessageBox(mainWindow, {
       type: 'info',
       message: 'No built-in themes available',
@@ -468,19 +549,57 @@ async function cloneBundledTheme() {
     return;
   }
 
-  const pick = await dialog.showMessageBox(mainWindow, {
+  // Step 1: pick category.
+  const categoryPick = await dialog.showMessageBox(mainWindow, {
     type: 'question',
-    buttons: [...themes, 'Cancel'],
-    cancelId: themes.length,
+    buttons: [
+      `Preset (${presets.length})`,
+      `Reveal.js built-in (${revealThemes.length})`,
+      'Cancel',
+    ],
+    cancelId: 2,
     defaultId: 0,
-    message: 'Copy a built-in theme',
-    detail: 'Which theme would you like to copy into your presentations folder?',
+    message: 'Choose a theme source',
+    detail:
+      'Presets are the app\'s curated starting points (TEMPLATE, custom-sample).\n' +
+      'Reveal.js built-ins are the upstream Reveal themes, generated into\n' +
+      'editable --r-* CSS custom-property overrides (not minified).',
   });
-  if (pick.response === themes.length) return;
+  if (categoryPick.response === 2) return;
+  const useReveal = categoryPick.response === 1;
+  const options = useReveal ? revealThemes : presets;
 
-  const name = themes[pick.response];
-  const src = path.join(app.getAppPath(), 'reveal', 'themes', name);
-  const dst = path.join(presentationsFolder, '_themes', name);
+  // Step 2: pick the specific theme. Electron message-box buttons have a
+  // practical limit; we page if needed. For our 12-max case, one paging
+  // round is enough.
+  const BUTTONS_PER_PAGE = 8;
+  let startIdx = 0;
+  let chosen = null;
+  while (chosen === null) {
+    const slice = options.slice(startIdx, startIdx + BUTTONS_PER_PAGE);
+    const hasMore = startIdx + BUTTONS_PER_PAGE < options.length;
+    const hasPrev = startIdx > 0;
+    const buttons = [...slice];
+    if (hasMore) buttons.push('Next…');
+    if (hasPrev) buttons.push('Previous…');
+    buttons.push('Cancel');
+
+    const pick = await dialog.showMessageBox(mainWindow, {
+      type: 'question',
+      buttons,
+      cancelId: buttons.length - 1,
+      defaultId: 0,
+      message: useReveal ? 'Pick a Reveal.js theme' : 'Pick a preset theme',
+      detail: `Showing ${startIdx + 1}–${startIdx + slice.length} of ${options.length}`,
+    });
+    const label = buttons[pick.response];
+    if (label === 'Cancel') return;
+    if (label === 'Next…') { startIdx += BUTTONS_PER_PAGE; continue; }
+    if (label === 'Previous…') { startIdx = Math.max(0, startIdx - BUTTONS_PER_PAGE); continue; }
+    chosen = label;
+  }
+
+  const dst = path.join(presentationsFolder, '_themes', chosen);
 
   if (fs.existsSync(dst)) {
     const confirm = await dialog.showMessageBox(mainWindow, {
@@ -488,14 +607,20 @@ async function cloneBundledTheme() {
       buttons: ['Cancel', 'Overwrite'],
       cancelId: 0,
       defaultId: 0,
-      message: `${name} already exists in _themes/`,
+      message: `${chosen} already exists in _themes/`,
       detail: 'Overwrite the existing folder?',
     });
     if (confirm.response !== 1) return;
+    fs.rmSync(dst, { recursive: true, force: true });
   }
 
   try {
-    copyDirectory(src, dst);
+    if (useReveal) {
+      generateThemeFromReveal(chosen, dst);
+    } else {
+      const src = path.join(app.getAppPath(), 'reveal', 'themes', chosen);
+      copyDirectory(src, dst);
+    }
     invalidateUserThemeCache();
     await shell.openPath(dst);
   } catch (err) {
