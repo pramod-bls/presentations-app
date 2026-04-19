@@ -90,6 +90,31 @@ font: "/reveal/vendor/my-brand-font.css"
 ---
 ```
 
+### …adjust padding around the slide content?
+
+Reveal doesn't expose spacing as `--r-*` custom properties, so you set it with real CSS selectors in your theme's `theme.css` or the deck's `deck.css`:
+
+```css
+/* Inner padding — space between slide edges and content */
+.reveal .slides section {
+  padding: 40px 60px;
+}
+
+/* Gap between paragraphs, lists, blocks */
+.reveal {
+  --r-block-margin: 30px;
+}
+
+/* Space around the whole slide canvas (vignette effect) */
+.reveal-viewport {
+  padding: 2%;
+}
+```
+
+Three different scopes — pick the one that matches what's too tight / too loose. The `TEMPLATE` theme's `theme.css` has these examples commented-out ready to uncomment.
+
+For the **outer canvas margin** (fraction of viewport that's always empty), use `margin: 0.04` in front-matter — this goes through Reveal's config rather than CSS.
+
 ### …make slides 1920×1080 instead of 960×700?
 
 ```yaml

@@ -44,6 +44,36 @@
 }
 */
 
+/* ─── Spacing and padding ───────────────────────────────────
+ * Reveal doesn't expose spacing as --r-* properties, so you have
+ * to style selectors directly.
+ *
+ * Three scopes:
+ *   1. margin around the slide canvas        → front-matter `margin: 0.04`
+ *      (fraction of the viewport; applies via Reveal config)
+ *   2. padding INSIDE each slide              → this file (or deck.css)
+ *   3. gap between blocks on a slide          → --r-block-margin (see above)
+ */
+
+/*
+ .reveal .slides section {
+   padding: 40px 60px;         * inner padding for every slide *
+ }
+
+ .reveal .slides section.title-slide {
+   padding-top: 120px;          * more room at the top of title slides *
+ }
+
+ .reveal {
+   --r-block-margin: 30px;      * gap between paragraphs/lists *
+ }
+
+ * Override just the canvas margin without touching front-matter: *
+ .reveal-viewport {
+   padding: 2%;
+ }
+*/
+
 /* ─── Heading tweaks ────────────────────────────────────────
  * Example: make h1/h2 feel tighter than Reveal's defaults.
  */

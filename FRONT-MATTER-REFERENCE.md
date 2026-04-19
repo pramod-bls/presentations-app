@@ -48,9 +48,18 @@ Source of truth: [src/front-matter.js](src/front-matter.js).
 |---|---|---|---|
 | `width` | number | `1920` (via DeckInit) | Virtual canvas width in px |
 | `height` | number | `1080` (via DeckInit) | Virtual canvas height in px |
-| `margin` | number 0–1 | `0` (via DeckInit) | Fraction of canvas reserved around slides |
+| `margin` | number 0–1 | `0` (via DeckInit) | Fraction of the viewport reserved as empty space around the slide canvas |
 
 Slides scale to the viewport — `width`/`height` define the *aspect* the deck is authored for, not the actual rendering size.
+
+**Spacing inside slides** (padding between slide edges and content, gap between paragraphs) is not a Reveal config option. Set it in `theme.css` or `deck.css`:
+
+```css
+.reveal .slides section { padding: 40px 60px; }   /* inner padding */
+.reveal { --r-block-margin: 30px; }                /* gap between blocks */
+```
+
+See `reveal/themes/TEMPLATE/theme.css` for a commented starting point.
 
 ## Typography
 
