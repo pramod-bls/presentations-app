@@ -315,6 +315,7 @@ function fileResponse(diskPath) {
   });
 }
 
+
 /**
  * Cache key: `<source>:<name>`. Cleared whenever the active presentations
  * folder changes so switching folders re-reads user themes from disk.
@@ -459,6 +460,25 @@ function copyDirectory(src, dst) {
 }
 
 /**
+ * Read the PowerPoint-layout + chrome/fragments/etc. commented recipes
+ * from the TEMPLATE theme's theme.css. Everything from the first
+ * "PowerPoint-style layout" marker to end-of-file — the Reveal-vars
+ * block before it is redundant once a theme is active.
+ *
+ * Appended to every generated/cloned theme (except TEMPLATE itself,
+ * which already has it) so users always have these recipes at hand.
+ */
+function readTemplateBoilerplate() {
+  const p = path.join(app.getAppPath(), 'reveal', 'themes', 'TEMPLATE', 'theme.css');
+  if (!fs.existsSync(p)) return '';
+  const source = fs.readFileSync(p, 'utf-8');
+  const marker = '/* ─── PowerPoint-style layout';
+  const idx = source.indexOf(marker);
+  if (idx === -1) return '';
+  return source.slice(idx);
+}
+
+/**
  * Generate a user-theme folder (`theme.json` + `theme.css`) from a
  * Reveal.js built-in theme's Sass source. Produces a clean, human-
  * readable CSS file of `--r-*` custom property overrides — not
@@ -477,7 +497,11 @@ function generateThemeFromReveal(themeName, dst) {
   const scssSource = fs.readFileSync(scssPath, 'utf-8');
   const parsed = parseScssTheme(scssSource);
   const css = renderThemeCss(themeName, parsed);
-  fs.writeFileSync(path.join(dst, 'theme.css'), css);
+  const boilerplate = readTemplateBoilerplate();
+  fs.writeFileSync(
+    path.join(dst, 'theme.css'),
+    boilerplate ? `${css.trimEnd()}\n\n${boilerplate}` : css
+  );
 
   // Minimal theme.json — just enough to activate the theme via
   // `theme: <name>` in a deck, without fighting the CSS. Users can
@@ -620,6 +644,20 @@ async function cloneBundledTheme() {
     } else {
       const src = path.join(app.getAppPath(), 'reveal', 'themes', chosen);
       copyDirectory(src, dst);
+      // Presets other than TEMPLATE get the boilerplate appended so
+      // every copied theme surfaces the same commented recipes
+      // (layout, chrome, fragments, backgrounds). TEMPLATE already has
+      // them verbatim.
+      if (chosen !== 'TEMPLATE') {
+        const boilerplate = readTemplateBoilerplate();
+        if (boilerplate) {
+          const cssPath = path.join(dst, 'theme.css');
+          const existing = fs.existsSync(cssPath) ? fs.readFileSync(cssPath, 'utf-8') : '';
+          if (!existing.includes('PowerPoint-style layout')) {
+            fs.writeFileSync(cssPath, `${existing.trimEnd()}\n\n${boilerplate}`);
+          }
+        }
+      }
     }
     invalidateUserThemeCache();
     await shell.openPath(dst);

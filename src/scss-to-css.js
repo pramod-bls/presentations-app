@@ -313,7 +313,14 @@ export function renderThemeCss(themeName, parsed) {
   lines.push(` * the full list of available --r-* properties.`);
   lines.push(` */`);
   lines.push('');
-  lines.push('.reveal {');
+  // Base rules + :root defaults come FIRST so the theme-specific
+  // overrides that follow can override them (same specificity — last
+  // declaration wins). Variables are declared on :root so
+  // .reveal-viewport (which paints the slide background) can read
+  // them: .reveal-viewport sits above .reveal in the DOM, so --r-*
+  // values scoped only to .reveal would not inherit.
+  lines.push(BASE_THEME_RULES);
+  lines.push(':root {');
   for (const { css, value } of parsed.properties) {
     lines.push(`  ${css}: ${value};`);
   }
@@ -321,3 +328,110 @@ export function renderThemeCss(themeName, parsed) {
   lines.push('');
   return lines.join('\n');
 }
+
+/**
+ * Rulesets that consume the --r-* custom properties plus :root defaults
+ * for every var the theme might not set. Mirrors the upstream Reveal
+ * base theme (reveal/vendor/themes/src/template/settings.scss +
+ * template/theme.scss) — without these, setting --r-background-color
+ * etc. has no visible effect because reveal.css itself doesn't read them,
+ * and theme overrides that omit sizing/weight properties would render
+ * with `initial` values (tiny fonts, wrong margins).
+ */
+export const BASE_THEME_RULES = `
+:root {
+  --r-background: #2b2b2b;
+  --r-background-color: #bbb;
+  --r-main-font: 'Lato', sans-serif;
+  --r-main-font-size: 40px;
+  --r-main-color: #eee;
+  --r-block-margin: 20px;
+  --r-heading-margin: 0 0 20px 0;
+  --r-heading-font: 'League Gothic', Impact, sans-serif;
+  --r-heading-color: #eee;
+  --r-heading-line-height: 1.2;
+  --r-heading-letter-spacing: normal;
+  --r-heading-text-transform: uppercase;
+  --r-heading-text-shadow: none;
+  --r-heading-font-weight: normal;
+  --r-heading1-text-shadow: none;
+  --r-heading1-size: 3.77em;
+  --r-heading2-size: 2.11em;
+  --r-heading3-size: 1.55em;
+  --r-heading4-size: 1em;
+  --r-code-font: monospace;
+  --r-link-color: #13daec;
+  --r-link-color-hover: #71e9f4;
+  --r-link-color-dark: #10b9c8;
+  --r-selection-background-color: #0fadbb;
+  --r-selection-color: #fff;
+}
+
+.reveal-viewport {
+  background: var(--r-background);
+  background-color: var(--r-background-color);
+}
+
+.reveal {
+  font-family: var(--r-main-font);
+  font-size: var(--r-main-font-size);
+  font-weight: normal;
+  color: var(--r-main-color);
+}
+
+.reveal ::selection {
+  color: var(--r-selection-color);
+  background: var(--r-selection-background-color);
+  text-shadow: none;
+}
+
+.reveal ::-moz-selection {
+  color: var(--r-selection-color);
+  background: var(--r-selection-background-color);
+  text-shadow: none;
+}
+
+.reveal h1,
+.reveal h2,
+.reveal h3,
+.reveal h4,
+.reveal h5,
+.reveal h6 {
+  margin: var(--r-heading-margin);
+  color: var(--r-heading-color);
+  font-family: var(--r-heading-font);
+  font-weight: var(--r-heading-font-weight);
+  line-height: var(--r-heading-line-height);
+  letter-spacing: var(--r-heading-letter-spacing);
+  text-transform: var(--r-heading-text-transform);
+  text-shadow: var(--r-heading-text-shadow);
+  word-wrap: break-word;
+}
+
+.reveal h1 { font-size: var(--r-heading1-size); text-shadow: var(--r-heading1-text-shadow); }
+.reveal h2 { font-size: var(--r-heading2-size); }
+.reveal h3 { font-size: var(--r-heading3-size); }
+.reveal h4 { font-size: var(--r-heading4-size); }
+
+.reveal a {
+  color: var(--r-link-color);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+.reveal a:hover {
+  color: var(--r-link-color-hover);
+}
+
+.reveal .controls { color: var(--r-link-color); }
+.reveal .progress {
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--r-link-color);
+}
+
+.reveal code { font-family: var(--r-code-font); }
+.reveal pre { font-family: var(--r-code-font); }
+
+@media print {
+  .backgrounds { background-color: var(--r-background-color); }
+}
+`;
