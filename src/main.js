@@ -982,13 +982,23 @@ async function waitForRevealReady(webContents, timeoutMs = 3000) {
   const isReadyExpr = 'typeof Reveal !== "undefined" && Reveal.isReady && Reveal.isReady()';
   while (Date.now() - start < timeoutMs) {
     try {
-      if (await webContents.executeJavaScript(isReadyExpr)) return;
+      if (await webContents.executeJavaScript(isReadyExpr)) break;
     } catch {
       // executeJavaScript throws if the page is mid-navigation; retry
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  // timed out — capture anyway
+  // Even after Reveal is ready, webfonts (Google Fonts loaded via theme.json
+  // `font:` key) may still be downloading. Capturing mid-font-load produces
+  // a blank thumbnail because text hasn't painted yet. document.fonts.ready
+  // resolves once every loaded font is decoded and rendering.
+  try {
+    await webContents.executeJavaScript(
+      'document.fonts && document.fonts.ready ? document.fonts.ready.then(() => true) : true'
+    );
+  } catch {
+    // ignore — at worst we capture without the final font
+  }
 }
 
 /**
