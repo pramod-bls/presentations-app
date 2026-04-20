@@ -915,8 +915,14 @@ function thumbnailCachePath(deckFolder) {
 }
 
 /**
- * Latest mtime across a deck's source files (deck.md, index.html, deck.js,
- * deck.css). Used to decide if a cached thumbnail is stale.
+ * Latest mtime across a deck's source files. Used to decide if a
+ * cached thumbnail is stale. Covers top-level deck files plus
+ * everything under `assets/` (images, SVGs, custom fonts etc.).
+ *
+ * Not included: the active theme's files, which live outside the
+ * deck folder. Resolving the theme would mean parsing deck.md's
+ * front-matter on every get-thumbnail call — not worth the cost
+ * since the live-reload watcher rebuilds the PNG during authoring.
  *
  * @returns {number} ms since epoch, or 0 if no source files exist.
  */
@@ -927,6 +933,37 @@ function deckSourceMtime(deckFolder) {
     const p = path.join(deckFolder, name);
     if (fs.existsSync(p)) {
       latest = Math.max(latest, fs.statSync(p).mtimeMs);
+    }
+  }
+  const assetsDir = path.join(deckFolder, 'assets');
+  if (fs.existsSync(assetsDir)) {
+    latest = Math.max(latest, latestMtimeInTree(assetsDir));
+  }
+  return latest;
+}
+
+/**
+ * Walk a directory tree and return the newest mtime across all files.
+ * Bounded so a pathological tree (symlink loop, huge unrelated dir)
+ * can't make thumbnail checks expensive.
+ */
+function latestMtimeInTree(root, budget = 500) {
+  let latest = 0;
+  let visited = 0;
+  const stack = [root];
+  while (stack.length && visited < budget) {
+    const dir = stack.pop();
+    let entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); }
+    catch { continue; }
+    for (const entry of entries) {
+      if (visited >= budget) break;
+      visited++;
+      const p = path.join(dir, entry.name);
+      if (entry.isDirectory()) stack.push(p);
+      else if (entry.isFile()) {
+        try { latest = Math.max(latest, fs.statSync(p).mtimeMs); } catch {}
+      }
     }
   }
   return latest;
